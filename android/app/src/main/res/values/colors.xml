@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Colores principales de la aplicación -->
+    <color name="colorPrimary">#0066B2</color> <!-- Azul SENA -->
+    <color name="colorPrimaryDark">#004B80</color>
+    <color name="colorAccent">#F3A600</color> <!-- Amarillo SENA -->
+    
+    <!-- Colores de texto -->
+    <color name="text_primary">#333333</color>
+    <color name="text_secondary">#666666</color>
+    <color name="text_hint">#999999</color>
+    
+    <!-- Colores de fondo -->
+    <color name="background">#F5F5F5</color>
+    <color name="surface">#FFFFFF</color>
+    
+    <!-- Colores de estado -->
+    <color name="success">#4CAF50</color>
+    <color name="warning">#FFC107</color>
+    <color name="error">#F44336</color>
+    <color name="info">#2196F3</color>
+    
+    <!-- Colores de gráficos -->
+    <color name="chart_1">#4285F4</color>
+    <color name="chart_2">#34A853</color>
+    <color name="chart_3">#FBBC05</color>
+    <color name="chart_4">#EA4335</color>
+    <color name="chart_5">#673AB7</color>
+</resources>
