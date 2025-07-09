@@ -1,14 +1,15 @@
 class ApiConstants {
   // URL base de la API (deberás reemplazarla con la URL real)
-  static const String baseUrl = 'http://localhost:8080/api';
+  static const String baseUrl = 'http://192.168.100.79:8000/api';
   
   // Endpoints
   static const String asistencias = '/asistencias';
   static const String estadisticas = '/estadisticas';
   static const String actualizaciones = '/actualizaciones';
+  static const String fichas = '/fichas-caracterizacion/all'; // Ajusta esta ruta si es diferente en tu backend
 
   // Tiempo de actualización en segundos
-  static const int refreshTime = 30;
+  static const int refreshTime = 300;
 }
 
 class JornadaConstants {

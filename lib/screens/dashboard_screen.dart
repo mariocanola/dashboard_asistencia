@@ -8,6 +8,7 @@ import '../providers/asistencia_provider.dart';
 import '../utils/constants.dart';
 import '../models/estadisticas_model.dart';
 import '../models/asistencia_model.dart';
+import '../models/ficha_model.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -19,8 +20,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedChartIndex = 0;
   int _touchedPieIndex = -1;
-  final List<String> _chartTypes = ['General', 'Por Programa', 'Detallado'];
-  
+
   @override
   void initState() {
     super.initState();
@@ -61,31 +61,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   // Encabezado
                   _buildHeader(fechaActual, horaActual, jornadaActual),
-                  
                   SizedBox(height: 24.h),
-                  
                   // Tarjetas de resumen
                   _buildSummaryCards(
-                    totalFichas: estadisticas?.programas.length ?? 0,
+                    totalFichas: provider.fichas.length,
                     totalPresentes: totalPresentes,
                     totalAusentes: totalAusentes,
                     porcentajeAsistencia: porcentajeAsistencia,
                   ),
-                  
+                  // Gráfico circular de asistencia
+                  SizedBox(height: 12.h),
+                  _buildPieChart(estadisticas),
+                  // Gráfico circular
+                  // Gráficas de barras agrupadas para las fichas
+                  _buildGroupedBarChart(provider.fichas),
                   SizedBox(height: 24.h),
-                  
-                  // Selector de gráficos
-                  _buildChartSelector(),
-                  
-                  SizedBox(height: 24.h),
-                  
-                  // Gráfico seleccionado
-                  _buildSelectedChart(estadisticas, provider.jornadaActual),
-                  
-                  SizedBox(height: 24.h),
-                  
-                  // Lista de fichas
-                  _buildFichasList(estadisticas),
+                  // Listado de fichas
+                  Text(
+                    'Fichas de caracterización',
+                    style: TextStyle(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF1E293B),
+                    ),
+                  ),
+                  SizedBox(height: 12.h),
+                  // _buildFichasList(provider.fichas), // Eliminado como se solicitó
                 ],
               ),
             ),
@@ -94,8 +95,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
-  
-  // Widgets auxiliares
+
+  // Formato de fecha
   String _formatDate(DateTime date) {
     final months = [
       'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -112,7 +113,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     
     return '$weekday, $day de $month de $year';
   }
-  
+
+  // Encabezado
   Widget _buildHeader(String fecha, String hora, String jornada) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,7 +173,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ],
     );
   }
-  
+
+  // Tarjetas de resumen
   Widget _buildSummaryCards({
     required int totalFichas,
     required int totalPresentes,
@@ -184,26 +187,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
           'Total Fichas',
           totalFichas.toString(),
           Icons.list_alt_rounded,
-          const Color(0xFF3B82F6),
+          const Color(0xFF3B82F6), // Azul
         ),
         SizedBox(width: 12.w),
         _buildSummaryCard(
           'Presentes',
           totalPresentes.toString(),
           Icons.check_circle_rounded,
-          const Color(0xFF10B981),
+          const Color(0xFF10B981), // Verde
         ),
         SizedBox(width: 12.w),
         _buildSummaryCard(
           'Ausentes',
           totalAusentes.toString(),
           Icons.cancel_rounded,
-          const Color(0xFFEF4444),
+          const Color(0xFFEF4444), // Rojo
         ),
       ],
     );
   }
-  
+
+  // Resumen de tarjeta individual
   Widget _buildSummaryCard(String title, String value, IconData icon, Color color) {
     return Expanded(
       child: Container(
@@ -259,84 +263,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
-  
-  Widget _buildChartSelector() {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: List.generate(_chartTypes.length, (index) {
-          final isSelected = _selectedChartIndex == index;
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedChartIndex = index;
-              });
-            },
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-              decoration: BoxDecoration(
-                color: isSelected ? Colors.white : Colors.transparent,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Text(
-                _chartTypes[index],
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color: isSelected
-                      ? const Color(0xFF0EA5E9)
-                      : const Color(0xFF64748B),
-                ),
-              ),
-            ),
-          );
-        }),
-      ),
-    );
-  }
-  
-  Widget _buildSelectedChart([EstadisticasJornada? estadisticas, String jornada = '']) {
-    if (estadisticas == null) {
-      return Container(
-        height: 300.h,
-        alignment: Alignment.center,
-        child: const CircularProgressIndicator(),
-      );
+
+  // Gráfico Circular
+  Widget _buildPieChart(EstadisticasJornada? estadisticas) {
+    int totalAprendices;
+    int totalPresentes;
+    int totalAusentes;
+
+    if (estadisticas == null || estadisticas.totalAprendices == 0) {
+      // Datos de prueba
+      totalAprendices = 15;
+      totalPresentes = 10;
+      totalAusentes = 5;
+    } else {
+      totalAprendices = estadisticas.totalAprendices;
+      totalPresentes = estadisticas.totalPresentes;
+      totalAusentes = totalAprendices - totalPresentes;
     }
-    
-    switch (_selectedChartIndex) {
-      case 0:
-        return _buildPieChart(estadisticas);
-      case 1:
-        return _buildBarChart(estadisticas);
-      case 2:
-        return _buildDetailedChart(estadisticas);
-      default:
-        return _buildPieChart(estadisticas);
-    }
-  }
-  
-  Widget _buildPieChart(EstadisticasJornada estadisticas) {
-    final totalAprendices = estadisticas.totalAprendices;
-    final totalPresentes = estadisticas.totalPresentes;
-    final totalAusentes = totalAprendices - totalPresentes;
-    
+
     final List<PieChartSectionData> sections = [];
-    
+
     // Sección de Presentes
     if (totalPresentes > 0) {
       sections.add(
@@ -353,7 +299,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       );
     }
-    
+
     // Sección de Ausentes
     if (totalAusentes > 0) {
       sections.add(
@@ -370,7 +316,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       );
     }
-    
+
     return Column(
       children: [
         SizedBox(
@@ -399,400 +345,97 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
         ),
-        SizedBox(height: 16.h),
-        _buildPieChartLegend(estadisticas),
       ],
     );
   }
-  
-  Widget _buildPieChartLegend(EstadisticasJornada estadisticas) {
-    final totalAprendices = estadisticas.totalAprendices;
-    final totalPresentes = estadisticas.totalPresentes;
-    final totalAusentes = totalAprendices - totalPresentes;
-    
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _buildLegendItem(
-          'Presentes',
-          const Color(0xFF10B981),
-          totalPresentes,
-          totalAprendices,
-        ),
-        SizedBox(width: 24.w),
-        _buildLegendItem(
-          'Ausentes',
-          const Color(0xFFEF4444),
-          totalAusentes,
-          totalAprendices,
-        ),
-      ],
-    );
-  }
-  
-  Widget _buildLegendItem(String label, Color color, int value, int total) {
-    final percentage = total > 0 ? (value / total * 100).round() : 0;
-    
-    return Column(
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 12.w,
-              height: 12.w,
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-              ),
-            ),
-            SizedBox(width: 8.w),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12.sp,
-                color: const Color(0xFF64748B),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 4.h),
-        Text(
-          '$value ($percentage%)',
-          style: TextStyle(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFF1E293B),
-          ),
-        ),
-      ],
-    );
-  }
-  
-  Widget _buildBarChart(EstadisticasJornada estadisticas) {
-    final programas = estadisticas.programas;
-    if (programas.isEmpty) {
-      return const Center(child: Text('No hay datos disponibles'));
+
+  Widget _buildGroupedBarChart(List<FichaModel> fichas) {
+    final topFichas = fichas.take(7).toList(); // Hasta 7 fichas para ejemplo visual
+    if (topFichas.isEmpty) {
+      return const SizedBox();
     }
-    
-    // Tomar hasta 5 programas para mejor visualización
-    final displayedProgramas = programas.length > 5
-        ? programas.sublist(0, 5)
-        : programas;
-    
-    return Column(
-      children: [
-        SizedBox(
-          height: 200.h,
+    // Preparamos los futures para obtener la cantidad de aprendices de cada ficha
+    final futures = topFichas.map((ficha) =>
+      Provider.of<AsistenciaProvider>(context, listen: false)
+        .apiService
+        .getCantidadAprendicesPorFicha(ficha.id)
+    ).toList();
+
+    return FutureBuilder<List<int>>(
+      future: Future.wait(futures),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return SizedBox(
+            height: 220,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (snapshot.hasError) {
+          return SizedBox(
+            height: 220,
+            child: Center(child: Icon(Icons.error, color: Colors.red)),
+          );
+        }
+        final cantidades = snapshot.data ?? [];
+        // Por ahora presentes = total aprendices, ausentes = 0
+        final presentes = cantidades;
+        final ausentes = List.generate(cantidades.length, (i) => 0); // TODO: actualizar si tienes el dato real
+        return SizedBox(
+          height: 220,
           child: BarChart(
             BarChartData(
               alignment: BarChartAlignment.spaceAround,
-              maxY: 100,
-              barTouchData: BarTouchData(
-                enabled: true,
-                touchTooltipData: BarTouchTooltipData(
-                  tooltipBgColor: Colors.black87,
-                  getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                    final programa = displayedProgramas[groupIndex];
-                    return BarTooltipItem(
-                      '${programa.nombre}\n${rod.toY.round()}%',
-                      const TextStyle(color: Colors.white),
-                    );
-                  },
-                ),
-              ),
+              maxY: (presentes + ausentes).fold<double>(0, (prev, e) => e > prev ? e.toDouble() : prev) + 2,
+              barTouchData: BarTouchData(enabled: false),
               titlesData: FlTitlesData(
-                show: true,
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(showTitles: true, reservedSize: 28),
+                ),
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
-                    getTitlesWidget: (value, meta) {
-                      if (value.toInt() >= 0 &&
-                          value.toInt() < displayedProgramas.length) {
-                        final nombre = displayedProgramas[value.toInt()].nombre;
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text(
-                            nombre.length > 8
-                                ? '${nombre.substring(0, 8)}..'
-                                : nombre,
-                            style: TextStyle(
-                              fontSize: 10.sp,
-                              color: const Color(0xFF64748B),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        );
-                      }
-                      return const Text('');
+                    getTitlesWidget: (double value, TitleMeta meta) {
+                      final idx = value.toInt();
+                      if (idx < 0 || idx >= topFichas.length) return const SizedBox();
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text(
+                          topFichas[idx].numeroFicha.toString(),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
+                      );
                     },
-                    reservedSize: 40,
                   ),
                 ),
-                leftTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                topTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                rightTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-              ),
-              gridData: FlGridData(
-                show: true,
-                drawVerticalLine: false,
-                getDrawingHorizontalLine: (value) => FlLine(
-                  color: const Color(0xFFE2E8F0),
-                  strokeWidth: 1,
-                ),
+                rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
               ),
               borderData: FlBorderData(show: false),
-              barGroups: displayedProgramas.asMap().entries.map((entry) {
-                final index = entry.key;
-                final programa = entry.value;
-                final porcentaje = programa.porcentajeAsistencia.toDouble();
-                
-                return BarChartGroupData(
-                  x: index,
+              barGroups: List.generate(topFichas.length, (i) =>
+                BarChartGroupData(
+                  x: i,
                   barRods: [
                     BarChartRodData(
-                      toY: porcentaje,
-                      color: _getColorForPercentage(porcentaje),
-                      width: 24.w,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(4),
-                        topRight: Radius.circular(4),
-                      ),
+                      toY: presentes[i].toDouble(),
+                      color: const Color(0xFF7C3AED), // Morado
+                      width: 16,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    BarChartRodData(
+                      toY: ausentes[i].toDouble(),
+                      color: const Color(0xFFF472B6), // Rosado
+                      width: 16,
+                      borderRadius: BorderRadius.circular(4),
                     ),
                   ],
-                );
-              }).toList(),
-            ),
-          ),
-        ),
-        SizedBox(height: 16.h),
-        Text(
-          'Asistencia por Programa',
-          style: TextStyle(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF1E293B),
-          ),
-        ),
-      ],
-    );
-  }
-  
-  Widget _buildDetailedChart(EstadisticasJornada estadisticas) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Detalle por Programa',
-          style: TextStyle(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF1E293B),
-          ),
-        ),
-        SizedBox(height: 16.h),
-        ...estadisticas.programas.map((programa) {
-          final porcentaje = programa.porcentajeAsistencia.toDouble();
-          return Padding(
-            padding: EdgeInsets.only(bottom: 12.h),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      programa.nombre,
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        color: const Color(0xFF475569),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    Text(
-                      '${porcentaje.round()}%',
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.bold,
-                        color: _getColorForPercentage(porcentaje),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 6.h),
-                Stack(
-                  children: [
-                    Container(
-                      height: 8.h,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE2E8F0),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                    Container(
-                      height: 8.h,
-                      width: MediaQuery.of(context).size.width * (porcentaje / 100) * 0.9,
-                      decoration: BoxDecoration(
-                        color: _getColorForPercentage(porcentaje),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 4.h),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${programa.aprendicesPresentes} de ${programa.aprendicesEsperados} aprendices',
-                      style: TextStyle(
-                        fontSize: 10.sp,
-                        color: const Color(0xFF94A3B8),
-                      ),
-                    ),
-                    Text(
-                      '${programa.aprendicesFaltantes} faltantes',
-                      style: TextStyle(
-                        fontSize: 10.sp,
-                        color: const Color(0xFFEF4444),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          );
-        }).toList(),
-      ],
-    );
-  }
-  
-  Widget _buildFichasList(EstadisticasJornada? estadisticas) {
-    if (estadisticas == null || estadisticas.programas.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    
-    // Aplanar la lista de fichas de todos los programas
-    final List<MapEntry<String, int>> fichas = [];
-    
-    for (final programa in estadisticas.programas) {
-      for (final ficha in programa.fichas) {
-        // Usar el porcentaje de asistencia del programa como aproximación
-        final porcentaje = programa.porcentajeAsistencia.toInt();
-        fichas.add(MapEntry(ficha, porcentaje));
-      }
-    }
-    
-    if (fichas.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Estado por Ficha',
-          style: TextStyle(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF1E293B),
-          ),
-        ),
-        SizedBox(height: 12.h),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: 12.w,
-            mainAxisSpacing: 12.h,
-            childAspectRatio: 1.5,
-          ),
-          itemCount: fichas.length,
-          itemBuilder: (context, index) {
-            final ficha = fichas[index];
-            return _buildFichaCard(ficha.key, ficha.value);
-          },
-        ),
-      ],
-    );
-  }
-  
-  Widget _buildFichaCard(String ficha, int porcentaje) {
-    return Container(
-      padding: EdgeInsets.all(12.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            ficha,
-            style: TextStyle(
-              fontSize: 12.sp,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF475569),
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Text(
-            '$porcentaje%',
-            style: TextStyle(
-              fontSize: 18.sp,
-              fontWeight: FontWeight.bold,
-              color: _getColorForPercentage(porcentaje.toDouble()),
-            ),
-          ),
-          Stack(
-            children: [
-              Container(
-                height: 6.h,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE2E8F0),
-                  borderRadius: BorderRadius.circular(3),
+                  showingTooltipIndicators: [],
                 ),
               ),
-              Container(
-                height: 6.h,
-                width: double.infinity * (porcentaje / 100),
-                decoration: BoxDecoration(
-                  color: _getColorForPercentage(porcentaje.toDouble()),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-            ],
+              gridData: FlGridData(show: false),
+            ),
           ),
-        ],
-      ),
+        );
+      },
     );
-  }
-  
-  Color _getColorForPercentage(double percentage) {
-    if (percentage >= 90) return const Color(0xFF10B981); // Verde
-    if (percentage >= 70) return const Color(0xFF3B82F6); // Azul
-    if (percentage >= 50) return const Color(0xFFF59E0B); // Ámbar
-    return const Color(0xFFEF4444); // Rojo
   }
 }

@@ -17,7 +17,7 @@ void main() async {
   const bool usarMock = true;
 
   // Inicializar el servicio de API (real o mock)
-  final apiService = usarMock ? MockApiService() : ApiService();
+  final apiService = ApiService();
   
   runApp(
     MultiProvider(

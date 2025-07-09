@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../models/asistencia_model.dart';
 import '../models/estadisticas_model.dart';
+import '../models/ficha_model.dart';
 import '../services/api_service.dart';
 import '../utils/constants.dart';
 
@@ -17,6 +18,7 @@ class AsistenciaProvider with ChangeNotifier {
   // Datos
   Map<String, EstadisticasJornada> _estadisticas = {};
   List<Asistencia> _asistencias = [];
+  List<FichaModel> _fichas = [];
   String _jornadaActual = '';
   Timer? _refreshTimer;
   
@@ -26,7 +28,9 @@ class AsistenciaProvider with ChangeNotifier {
   bool get hasError => _errorMessage.isNotEmpty;
   Map<String, EstadisticasJornada> get estadisticas => _estadisticas;
   List<Asistencia> get asistencias => _asistencias;
+  List<FichaModel> get fichas => _fichas;
   String get jornadaActual => _jornadaActual;
+  ApiService get apiService => _apiService;
   
   // Constructor
   AsistenciaProvider({required ApiService apiService}) : _apiService = apiService {
@@ -44,27 +48,46 @@ class AsistenciaProvider with ChangeNotifier {
     _isLoading = true;
     _errorMessage = '';
     notifyListeners();
-    
+
     try {
       // Actualizar la jornada actual
       _jornadaActual = JornadaConstants.getJornadaActual();
-      
-      // Cargar estadísticas
-      _estadisticas = await _apiService.getEstadisticas();
-      
+
+      // Cargar estadísticas (no detener si falla)
+      try {
+        _estadisticas = await _apiService.getEstadisticas();
+      } catch (e) {
+        _errorMessage += 'Error al cargar estadísticas: $e\n';
+        _estadisticas = {};
+      }
+
+      // Cargar fichas (siempre intentar)
+      try {
+        _fichas = await _apiService.getFichas();
+      } catch (e) {
+        _errorMessage += 'Error al cargar fichas: $e\n';
+        _fichas = [];
+      }
+
       // Si hay una jornada activa, cargar sus asistencias
       if (_jornadaActual.isNotEmpty) {
-        _asistencias = await _apiService.getAsistenciasPorJornada(_jornadaActual);
+        try {
+          _asistencias = await _apiService.getAsistenciasPorJornada(_jornadaActual);
+        } catch (e) {
+          _errorMessage += 'Error al cargar asistencias: $e\n';
+          _asistencias = [];
+        }
       }
-      
+
       _isLoading = false;
       notifyListeners();
     } catch (e) {
-      _errorMessage = 'Error al cargar los datos: $e';
+      _errorMessage += 'Error general al cargar los datos: $e';
       _isLoading = false;
       notifyListeners();
     }
   }
+
   
   // Configurar actualización automática
   void _configurarActualizacionAutomatica() {
@@ -92,6 +115,9 @@ class AsistenciaProvider with ChangeNotifier {
       // Actualizar estadísticas
       _estadisticas = await _apiService.getEstadisticas();
       
+      // Cargar fichas
+      _fichas = await _apiService.getFichas();
+
       // Si hay una jornada activa, actualizar sus asistencias
       if (_jornadaActual.isNotEmpty) {
         _asistencias = await _apiService.getAsistenciasPorJornada(_jornadaActual);

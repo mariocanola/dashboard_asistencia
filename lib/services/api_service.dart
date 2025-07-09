@@ -6,6 +6,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import '../models/asistencia_model.dart';
 import '../models/estadisticas_model.dart';
 import '../utils/constants.dart';
+import '../models/ficha_model.dart';
 
 class ApiService {
   final String baseUrl;
@@ -76,111 +77,60 @@ class ApiService {
     }
   }
 
+  // Obtener las fichas de caracterización
+  Future<List<FichaModel>> getFichas() async {
+    try {
+      final url = '$baseUrl${ApiConstants.fichas}';
+      print('Llamando a: $url');
+      final response = await httpClient.get(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+      );
+      print('Status code: ${response.statusCode}');
+      print('Body: ${response.body}');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        final respuesta = RespuestaGeneral.fromJson(data);
+        print('Fichas recibidas: ${respuesta.data.length}');
+        return respuesta.data;
+      } else {
+        print('Error al cargar las fichas: ${response.statusCode}');
+        throw Exception('Error al cargar las fichas: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error de conexión: $e');
+      throw Exception('Error de conexión: $e');
+    }
+  }
+
+  // Obtener la cantidad de aprendices por ficha
+  Future<int> getCantidadAprendicesPorFicha(int fichaId) async {
+    try {
+      final url = '$baseUrl/fichas-caracterizacion/aprendices/$fichaId';
+      print('Llamando a: $url');
+      final response = await httpClient.get(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+      );
+      print('Status code: ${response.statusCode}');
+      print('Body: ${response.body}');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        final cantidad = data['cantidad_aprendices'] ?? 0;
+        print('Cantidad aprendices ficha $fichaId: $cantidad');
+        return cantidad;
+      } else {
+        print('Error al cargar cantidad de aprendices: ${response.statusCode}');
+        throw Exception('Error al cargar cantidad de aprendices: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error de conexión: $e');
+      throw Exception('Error de conexión: $e');
+    }
+  }
+
   // Cerrar la conexión
   void dispose() {
     httpClient.close();
-  }
-}
-
-// --- MOCK API SERVICE PARA DATOS DE PRUEBA ---
-class MockApiService extends ApiService {
-  MockApiService() : super(baseUrl: 'mock');
-
-  @override
-  Future<Map<String, EstadisticasJornada>> getEstadisticas() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return {
-      'Mañana': EstadisticasJornada(
-        jornada: 'Mañana',
-        totalAprendices: 30,
-        totalPresentes: 25,
-        programas: [
-          EstadisticasPrograma(
-            nombre: 'ADSO',
-            aprendicesEsperados: 15,
-            aprendicesPresentes: 13,
-            fichas: ['123456', '654321'],
-          ),
-          EstadisticasPrograma(
-            nombre: 'Contabilidad',
-            aprendicesEsperados: 15,
-            aprendicesPresentes: 12,
-            fichas: ['789012', '210987'],
-          ),
-        ],
-      ),
-      'Tarde': EstadisticasJornada(
-        jornada: 'Tarde',
-        totalAprendices: 20,
-        totalPresentes: 18,
-        programas: [
-          EstadisticasPrograma(
-            nombre: 'Sistemas',
-            aprendicesEsperados: 10,
-            aprendicesPresentes: 9,
-            fichas: ['333444'],
-          ),
-          EstadisticasPrograma(
-            nombre: 'Salud',
-            aprendicesEsperados: 10,
-            aprendicesPresentes: 9,
-            fichas: ['555666'],
-          ),
-        ],
-      ),
-      'Noche': EstadisticasJornada(
-        jornada: 'Noche',
-        totalAprendices: 10,
-        totalPresentes: 7,
-        programas: [
-          EstadisticasPrograma(
-            nombre: 'Electricidad',
-            aprendicesEsperados: 10,
-            aprendicesPresentes: 7,
-            fichas: ['777888'],
-          ),
-        ],
-      ),
-    };
-  }
-
-  @override
-  Future<List<Asistencia>> getAsistenciasPorJornada(String jornada) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return [
-      Asistencia(
-        id: '1',
-        ficha: '123456',
-        programa: 'ADSO',
-        jornada: jornada,
-        aprendicesEsperados: 15,
-        aprendicesPresentes: 13,
-        fechaActualizacion: DateTime.now(),
-      ),
-      Asistencia(
-        id: '2',
-        ficha: '654321',
-        programa: 'Contabilidad',
-        jornada: jornada,
-        aprendicesEsperados: 15,
-        aprendicesPresentes: 12,
-        fechaActualizacion: DateTime.now(),
-      ),
-    ];
-  }
-
-  @override
-  Stream<List<Asistencia>> getAsistenciasEnTiempoReal() async* {
-    yield [
-      Asistencia(
-        id: '1',
-        ficha: '123456',
-        programa: 'ADSO',
-        jornada: 'Mañana',
-        aprendicesEsperados: 15,
-        aprendicesPresentes: 13,
-        fechaActualizacion: DateTime.now(),
-      ),
-    ];
   }
 }
