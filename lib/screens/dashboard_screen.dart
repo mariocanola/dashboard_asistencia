@@ -382,7 +382,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               centerSpaceRadius: 60,
               startDegreeOffset: -90,
               borderData: FlBorderData(show: false),
-              sectionsTouchData: PieTouchData(
+              pieTouchData: PieTouchData(
                 touchCallback: (FlTouchEvent event, pieTouchResponse) {
                   setState(() {
                     if (event.isInterestedForInteractions ||
