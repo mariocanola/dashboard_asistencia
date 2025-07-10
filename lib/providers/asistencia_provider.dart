@@ -1,12 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
+import '../utils/constants.dart';
 
 import '../models/asistencia_model.dart';
 import '../models/estadisticas_model.dart';
 import '../models/ficha_model.dart';
 import '../services/api_service.dart';
-import '../utils/constants.dart';
 
 class AsistenciaProvider with ChangeNotifier {
   final ApiService _apiService;
@@ -31,10 +32,38 @@ class AsistenciaProvider with ChangeNotifier {
   List<FichaModel> get fichas => _fichas;
   String get jornadaActual => _jornadaActual;
   ApiService get apiService => _apiService;
+
+  /// Fichas de la jornada actual
+  List<FichaModel> get fichasJornadaActual {
+    if (_jornadaActual.isEmpty) return [];
+    String normalizar(String s) => s.trim().toLowerCase()
+      .replaceAll('á', 'a')
+      .replaceAll('é', 'e')
+      .replaceAll('í', 'i')
+      .replaceAll('ó', 'o')
+      .replaceAll('ú', 'u');
+    return _fichas.where((f) =>
+      normalizar(f.jornadaFormacion.jornada) == normalizar(_jornadaActual)
+    ).toList();
+  }
+
+  /// Asistencias de fichas de la jornada actual
+  List<Asistencia> get asistenciasJornadaActual {
+    final fichasIds = fichasJornadaActual.map((f) => f.numeroFicha.toString()).toSet();
+    String jornadaActualNormalizada = _jornadaActual.trim().toLowerCase().replaceAll('á', 'a').replaceAll('é', 'e').replaceAll('í', 'i').replaceAll('ó', 'o').replaceAll('ú', 'u');
+    return _asistencias.where((a) {
+      String jornadaAsistenciaNormalizada = a.jornada.trim().toLowerCase().replaceAll('á', 'a').replaceAll('é', 'e').replaceAll('í', 'i').replaceAll('ó', 'o').replaceAll('ú', 'u');
+      // Debug print para ver los valores comparados
+      // ignore: avoid_print
+      print('Comparando asistencia: ficha=${a.ficha}, jornadaAsistencia=$jornadaAsistenciaNormalizada vs jornadaActual=$jornadaActualNormalizada');
+      return fichasIds.contains(a.ficha) && jornadaAsistenciaNormalizada == jornadaActualNormalizada;
+    }).toList();
+  }
   
   // Constructor
   AsistenciaProvider({required ApiService apiService}) : _apiService = apiService {
     _init();
+    // _initWebSocket(); // Desactivado porque el servicio fue eliminado
   }
   
   // Inicialización
@@ -51,7 +80,7 @@ class AsistenciaProvider with ChangeNotifier {
 
     try {
       // Actualizar la jornada actual
-      _jornadaActual = JornadaConstants.getJornadaActual();
+      _jornadaActual = JornadaConstants.getJornadaString(JornadaConstants.getJornadaActual());
 
       // Cargar estadísticas (no detener si falla)
       try {
@@ -88,7 +117,6 @@ class AsistenciaProvider with ChangeNotifier {
     }
   }
 
-  
   // Configurar actualización automática
   void _configurarActualizacionAutomatica() {
     // Cancelar el temporizador existente si lo hay
@@ -109,7 +137,7 @@ class AsistenciaProvider with ChangeNotifier {
       final jornadaCambio = nuevaJornada != _jornadaActual;
       
       if (jornadaCambio) {
-        _jornadaActual = nuevaJornada;
+        _jornadaActual = JornadaConstants.getJornadaString(nuevaJornada);
       }
       
       // Actualizar estadísticas
@@ -140,14 +168,6 @@ class AsistenciaProvider with ChangeNotifier {
   // Obtener asistencias filtradas por programa
   List<Asistencia> getAsistenciasPorPrograma(String programa) {
     return _asistencias.where((a) => a.programa == programa).toList();
-  }
-  
-  // Limpiar recursos
-  @override
-  void dispose() {
-    _refreshTimer?.cancel();
-    _apiService.dispose();
-    super.dispose();
   }
   
   // Método estático para facilitar el acceso al provider

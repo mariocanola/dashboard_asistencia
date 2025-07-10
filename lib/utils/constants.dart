@@ -13,9 +13,9 @@ class ApiConstants {
 }
 
 class JornadaConstants {
-  static const String manana = 'Mañana';
-  static const String tarde = 'Tarde';
-  static const String noche = 'Noche';
+  static const String manana = 'MAÑANA';
+  static const String tarde = 'TARDE';
+  static const String noche = 'NOCHE';
   
   static List<String> get todas => [manana, tarde, noche];
   
@@ -26,23 +26,42 @@ class JornadaConstants {
     noche: {'inicio': '18:00', 'fin': '23:00'},
   };
   
-  // Obtener la jornada actual basada en la hora
-  static String getJornadaActual() {
+  // Retorna 1 para Mañana, 2 para Tarde, 3 para Noche, 0 si está fuera de jornada
+  static int getJornadaActual() {
     final now = DateTime.now();
     final horaActual = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-    
-    for (var entry in horarios.entries) {
-      final inicio = entry.value['inicio']!;
-      final fin = entry.value['fin']!;
-      
-      if (horaActual.compareTo(inicio) >= 0 && horaActual.compareTo(fin) < 0) {
-        return entry.key;
-      }
+
+    if (horaActual.compareTo(horarios[manana]!['inicio']!) >= 0 &&
+        horaActual.compareTo(horarios[manana]!['fin']!) < 0) {
+      return 1;
     }
-    
-    return ''; // Fuera del horario de las jornadas
+    if (horaActual.compareTo(horarios[tarde]!['inicio']!) >= 0 &&
+        horaActual.compareTo(horarios[tarde]!['fin']!) < 0) {
+      return 2;
+    }
+    if (horaActual.compareTo(horarios[noche]!['inicio']!) >= 0 &&
+        horaActual.compareTo(horarios[noche]!['fin']!) < 0) {
+      return 3;
+    }
+    return 0; // Fuera del horario de las jornadas
   }
+
+  // Convierte el número de jornada (1, 2, 3) a su string correspondiente
+  static String getJornadaString(int jornada) {
+    switch (jornada) {
+      case 1:
+        return manana;
+      case 2:
+        return tarde;
+      case 3:
+        return noche;
+      default:
+        return '';
+    }
+  }
+
 }
+
 
 class AppThemes {
   // Colores principales

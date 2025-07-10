@@ -41,28 +41,11 @@ class ApiService {
     }
   }
 
-  // Obtener las asistencias en tiempo real
-  Stream<List<Asistencia>> getAsistenciasEnTiempoReal() {
-    final channel = WebSocketChannel.connect(
-      Uri.parse('wss://tu-api-sena.com/ws/asistencias'),
-    );
-
-    return channel.stream.map((data) {
-      try {
-        final List<dynamic> jsonData = json.decode(data);
-        return jsonData.map((item) => Asistencia.fromJson(item)).toList();
-      } catch (e) {
-        print('Error al procesar datos del WebSocket: $e');
-        return <Asistencia>[];
-      }
-    });
-  }
-
   // Obtener las asistencias por jornada
-  Future<List<Asistencia>> getAsistenciasPorJornada(String jornada) async {
+  Future<List<Asistencia>> getAsistenciasPorJornada(int jornadaId) async {
     try {
       final response = await httpClient.get(
-        Uri.parse('$baseUrl${ApiConstants.asistencias}?jornada=$jornada'),
+        Uri.parse('$baseUrl${ApiConstants.asistencias}/jornada/$jornadaId'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -80,7 +63,7 @@ class ApiService {
   // Obtener las fichas de caracterización
   Future<List<FichaModel>> getFichas() async {
     try {
-      final url = '$baseUrl${ApiConstants.fichas}';
+      final url = '$baseUrl${ApiConstants.fichas}/all';
       print('Llamando a: $url');
       final response = await httpClient.get(
         Uri.parse(url),
