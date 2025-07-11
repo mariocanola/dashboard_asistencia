@@ -16,112 +16,74 @@ class ApiService {
       : httpClient = httpClient ?? http.Client(),
         baseUrl = baseUrl ?? ApiConstants.baseUrl;
 
-  // Obtener las estadísticas de asistencia
+  /// Obtiene las estadísticas de asistencia
   Future<Map<String, EstadisticasJornada>> getEstadisticas() async {
-    try {
-      final response = await httpClient.get(
-        Uri.parse('$baseUrl${ApiConstants.estadisticas}'),
-        headers: {'Content-Type': 'application/json'},
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        final Map<String, EstadisticasJornada> estadisticas = {};
-        
-        for (var entry in data.entries) {
-          estadisticas[entry.key] = EstadisticasJornada.fromJson(entry.value);
-        }
-        
-        return estadisticas;
-      } else {
-        throw Exception('Error al cargar las estadísticas: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Error de conexión: $e');
+    final response = await _get('${ApiConstants.estadisticas}');
+    final Map<String, dynamic> data = _decodeResponse(response);
+    final Map<String, EstadisticasJornada> estadisticas = {};
+    for (var entry in data.entries) {
+      estadisticas[entry.key] = EstadisticasJornada.fromJson(entry.value);
     }
+    return estadisticas;
   }
 
-  // Obtener las asistencias por jornada
+  /// Obtiene las asistencias por jornada
   Future<List<Asistencia>> getAsistenciasPorJornada(int jornadaId) async {
-    try {
-      final url = '$baseUrl${ApiConstants.fichas}/jornada/$jornadaId';
-      print('Llamando a: $url');
-      final response = await httpClient.get(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-      );
-
-      if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        if (data.isNotEmpty) {
-          print('Datos recibidos de la API: $data');
-        } else {
-          print('No llegaron datos de la API');
-        }
-        return data.map((item) => Asistencia.fromJson(item)).toList();
-      } else {
-        print('Error al cargar las fichas: ${response.statusCode}');
-        throw Exception('Error al cargar las asistencias: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Error de conexión: $e');
-    }
+    final response = await _get('${ApiConstants.fichas}/jornada/$jornadaId');
+    final List<dynamic> data = _decodeResponse(response);
+    return data.map((item) => Asistencia.fromJson(item)).toList();
   }
 
-  // Obtener las fichas de caracterización
+  /// Obtiene las fichas de caracterización
   Future<List<FichaModel>> getFichas() async {
-    try {
-      final url = '$baseUrl${ApiConstants.fichas}/all';
-      print('Llamando a: $url');
-      final response = await httpClient.get(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-      );
-      print('Status code: ${response.statusCode}');
-      print('Body: ${response.body}');
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        final respuesta = RespuestaGeneral.fromJson(data);
-        print('Fichas recibidas: ${respuesta.data.length}');
-        return respuesta.data;
-      } else {
-        print('Error al cargar las fichas: ${response.statusCode}');
-        throw Exception('Error al cargar las fichas: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error de conexión: $e');
-      throw Exception('Error de conexión: $e');
-    }
+    final response = await _get('${ApiConstants.fichas}/all');
+    final Map<String, dynamic> data = _decodeResponse(response);
+    final respuesta = RespuestaGeneral.fromJson(data);
+    return respuesta.data;
   }
 
-  // Obtener la cantidad de aprendices por ficha
+  /// Obtiene la cantidad de aprendices por ficha
   Future<int> getCantidadAprendicesPorFicha(int fichaId) async {
-    try {
-      final url = '$baseUrl/fichas-caracterizacion/aprendices/$fichaId';
-      print('Llamando a: $url');
-      final response = await httpClient.get(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-      );
-      print('Status code: ${response.statusCode}');
-      print('Body: ${response.body}');
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        final cantidad = data['cantidad_aprendices'] ?? 0;
-        print('Cantidad aprendices ficha $fichaId: $cantidad');
-        return cantidad;
-      } else {
-        print('Error al cargar cantidad de aprendices: ${response.statusCode}');
-        throw Exception('Error al cargar cantidad de aprendices: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error de conexión: $e');
-      throw Exception('Error de conexión: $e');
-    }
+    final response = await _get('/fichas-caracterizacion/aprendices/$fichaId');
+    final Map<String, dynamic> data = _decodeResponse(response);
+    return data['cantidad_aprendices'] ?? 0;
   }
 
-  // Cerrar la conexión
+  /// Cierra la conexión HTTP
   void dispose() {
     httpClient.close();
   }
+
+  // --- Métodos privados auxiliares ---
+
+  /// Realiza una petición GET a la API
+  Future<http.Response> _get(String endpoint) async {
+    final url = Uri.parse('$baseUrl$endpoint');
+    try {
+      final response = await httpClient.get(url, headers: _headers());
+      _checkStatusCode(response);
+      return response;
+    } catch (e) {
+      throw Exception('Error de conexión: $e');
+    }
+  }
+
+  /// Decodifica la respuesta HTTP
+  dynamic _decodeResponse(http.Response response) {
+    try {
+      return json.decode(response.body);
+    } catch (e) {
+      throw Exception('Error al decodificar la respuesta: $e');
+    }
+  }
+
+  /// Verifica el código de estado de la respuesta
+  void _checkStatusCode(http.Response response) {
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error en la petición: ${response.statusCode}');
+    }
+  }
+
+  /// Construye los headers para las peticiones
+  Map<String, String> _headers() => {'Content-Type': 'application/json'};
 }
