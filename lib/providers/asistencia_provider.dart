@@ -21,6 +21,7 @@ class AsistenciaProvider with ChangeNotifier {
   List<Asistencia> _asistencias = [];
   List<FichaModel> _fichas = [];
   String _jornadaActual = '';
+  int _jornadaActualId = 0;
   Timer? _refreshTimer;
   
   // Getters
@@ -42,9 +43,12 @@ class AsistenciaProvider with ChangeNotifier {
       .replaceAll('í', 'i')
       .replaceAll('ó', 'o')
       .replaceAll('ú', 'u');
-    return _fichas.where((f) =>
-      normalizar(f.jornadaFormacion.jornada) == normalizar(_jornadaActual)
-    ).toList();
+    return _fichas.where((f) {
+      final fichaJornada = normalizar(f.jornadaFormacion.jornada);
+      final actual = normalizar(_jornadaActual);
+      print('Comparando ficha:  [33m${f.numeroFicha} [0m jornadaFicha=\' [36m${f.jornadaFormacion.jornada} [0m\' vs actual=\' [35m$actual [0m\'');
+      return fichaJornada == actual;
+    }).toList();
   }
 
   /// Asistencias de fichas de la jornada actual
@@ -80,7 +84,8 @@ class AsistenciaProvider with ChangeNotifier {
 
     try {
       // Actualizar la jornada actual
-      _jornadaActual = JornadaConstants.getJornadaString(JornadaConstants.getJornadaActual());
+      _jornadaActualId = JornadaConstants.getJornadaActual();
+      _jornadaActual = JornadaConstants.getJornadaString(_jornadaActualId);
 
       // Cargar estadísticas (no detener si falla)
       try {
@@ -99,9 +104,9 @@ class AsistenciaProvider with ChangeNotifier {
       }
 
       // Si hay una jornada activa, cargar sus asistencias
-      if (_jornadaActual.isNotEmpty) {
+      if (_jornadaActualId != 0) {
         try {
-          _asistencias = await _apiService.getAsistenciasPorJornada(_jornadaActual);
+          _asistencias = await _apiService.getAsistenciasPorJornada(_jornadaActualId);
         } catch (e) {
           _errorMessage += 'Error al cargar asistencias: $e\n';
           _asistencias = [];
@@ -133,11 +138,12 @@ class AsistenciaProvider with ChangeNotifier {
   Future<void> _actualizarDatos() async {
     try {
       // Verificar si la jornada ha cambiado
-      final nuevaJornada = JornadaConstants.getJornadaActual();
-      final jornadaCambio = nuevaJornada != _jornadaActual;
+      final nuevaJornadaId = JornadaConstants.getJornadaActual();
+      final jornadaCambio = nuevaJornadaId != _jornadaActualId;
       
       if (jornadaCambio) {
-        _jornadaActual = JornadaConstants.getJornadaString(nuevaJornada);
+        _jornadaActualId = nuevaJornadaId;
+        _jornadaActual = JornadaConstants.getJornadaString(nuevaJornadaId);
       }
       
       // Actualizar estadísticas
@@ -147,8 +153,8 @@ class AsistenciaProvider with ChangeNotifier {
       _fichas = await _apiService.getFichas();
 
       // Si hay una jornada activa, actualizar sus asistencias
-      if (_jornadaActual.isNotEmpty) {
-        _asistencias = await _apiService.getAsistenciasPorJornada(_jornadaActual);
+      if (_jornadaActualId != 0) {
+        _asistencias = await _apiService.getAsistenciasPorJornada(_jornadaActualId);
       } else {
         _asistencias = [];
       }

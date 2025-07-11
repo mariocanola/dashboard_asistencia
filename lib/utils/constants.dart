@@ -1,12 +1,12 @@
 class ApiConstants {
   // URL base de la API (deberás reemplazarla con la URL real)
-  static const String baseUrl = 'http://192.168.100.79:8000/api';
+  static const String baseUrl = 'http://10.7.49.240:8000/api';
   
   // Endpoints
   static const String asistencias = '/asistencias';
   static const String estadisticas = '/estadisticas';
   static const String actualizaciones = '/actualizaciones';
-  static const String fichas = '/fichas-caracterizacion/all'; // Ajusta esta ruta si es diferente en tu backend
+  static const String fichas = '/fichas-caracterizacion'; // Ajusta esta ruta si es diferente en tu backend
 
   // Tiempo de actualización en segundos
   static const int refreshTime = 300;

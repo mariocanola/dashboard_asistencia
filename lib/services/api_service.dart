@@ -44,15 +44,23 @@ class ApiService {
   // Obtener las asistencias por jornada
   Future<List<Asistencia>> getAsistenciasPorJornada(int jornadaId) async {
     try {
+      final url = '$baseUrl${ApiConstants.fichas}/jornada/$jornadaId';
+      print('Llamando a: $url');
       final response = await httpClient.get(
-        Uri.parse('$baseUrl${ApiConstants.asistencias}/jornada/$jornadaId'),
+        Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
+        if (data.isNotEmpty) {
+          print('Datos recibidos de la API: $data');
+        } else {
+          print('No llegaron datos de la API');
+        }
         return data.map((item) => Asistencia.fromJson(item)).toList();
       } else {
+        print('Error al cargar las fichas: ${response.statusCode}');
         throw Exception('Error al cargar las asistencias: ${response.statusCode}');
       }
     } catch (e) {

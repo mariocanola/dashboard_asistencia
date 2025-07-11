@@ -209,7 +209,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                     ),
                                     SizedBox(height: 16.h),
-                                    FichasBarChart(fichas: provider.fichas),
+                                    FichasBarChart(fichas: provider.fichasJornadaActual),
                                   ],
                                 ),
                               ),
