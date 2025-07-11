@@ -1,3 +1,4 @@
+/// Modelo que representa la asistencia de una ficha en un programa.
 class Asistencia {
   final String id;
   final String ficha;
@@ -7,7 +8,7 @@ class Asistencia {
   final int aprendicesPresentes;
   final DateTime fechaActualizacion;
 
-  Asistencia({
+  const Asistencia({
     required this.id,
     required this.ficha,
     required this.programa,
@@ -17,38 +18,32 @@ class Asistencia {
     required this.fechaActualizacion,
   });
 
-  factory Asistencia.fromJson(Map<String, dynamic> json) {
-    return Asistencia(
-      id: json['id'] ?? '',
-      ficha: json['ficha'] ?? '',
-      programa: json['programa'] ?? '',
-      jornada: json['jornada'] ?? '',
-      aprendicesEsperados: json['aprendices_esperados'] ?? 0,
-      aprendicesPresentes: json['aprendices_presentes'] ?? 0,
-      fechaActualizacion: DateTime.parse(json['fecha_actualizacion'] ?? DateTime.now().toIso8601String()),
-    );
-  }
+  /// Crea una instancia de [Asistencia] a partir de un mapa JSON.
+  factory Asistencia.fromJson(Map<String, dynamic> json) => Asistencia(
+        id: json['id'] ?? '',
+        ficha: json['ficha'] ?? '',
+        programa: json['programa'] ?? '',
+        jornada: json['jornada'] ?? '',
+        aprendicesEsperados: json['aprendices_esperados'] ?? 0,
+        aprendicesPresentes: json['aprendices_presentes'] ?? 0,
+        fechaActualizacion: DateTime.tryParse(json['fecha_actualizacion'] ?? '') ?? DateTime.now(),
+      );
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'ficha': ficha,
-      'programa': programa,
-      'jornada': jornada,
-      'aprendices_esperados': aprendicesEsperados,
-      'aprendices_presentes': aprendicesPresentes,
-      'fecha_actualizacion': fechaActualizacion.toIso8601String(),
-    };
-  }
+  /// Convierte la instancia en un mapa JSON.
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'ficha': ficha,
+        'programa': programa,
+        'jornada': jornada,
+        'aprendices_esperados': aprendicesEsperados,
+        'aprendices_presentes': aprendicesPresentes,
+        'fecha_actualizacion': fechaActualizacion.toIso8601String(),
+      };
 
-  // Método para calcular el porcentaje de asistencia
-  double get porcentajeAsistencia {
-    if (aprendicesEsperados == 0) return 0.0;
-    return (aprendicesPresentes / aprendicesEsperados) * 100;
-  }
+  /// Porcentaje de asistencia de los aprendices.
+  double get porcentajeAsistencia =>
+      aprendicesEsperados == 0 ? 0.0 : (aprendicesPresentes / aprendicesEsperados) * 100;
 
-  // Método para obtener la cantidad de aprendices faltantes
-  int get aprendicesFaltantes {
-    return aprendicesEsperados - aprendicesPresentes;
-  }
+  /// Cantidad de aprendices que faltaron.
+  int get aprendicesFaltantes => aprendicesEsperados - aprendicesPresentes;
 }

@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../models/asistencia_model.dart';
 import '../models/estadisticas_model.dart';
 import '../utils/constants.dart';
+import '../models/respuesta_general.dart';
 import '../models/ficha_model.dart';
 
 class ApiService {
