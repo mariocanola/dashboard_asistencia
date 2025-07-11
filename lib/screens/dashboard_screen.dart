@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 
 import '../providers/asistencia_provider.dart';
-import '../models/estadisticas_model.dart';
 import '../models/ficha_model.dart';
 import '../widgets/dashboard_header.dart';
 import '../widgets/summary_cards.dart';

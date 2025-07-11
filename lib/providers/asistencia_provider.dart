@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import '../utils/constants.dart';
@@ -21,7 +20,6 @@ class AsistenciaProvider with ChangeNotifier {
   List<Asistencia> _asistencias = [];
   List<FichaModel> _fichas = [];
   String _jornadaActual = '';
-  int _jornadaActualId = 0;
   Timer? _refreshTimer;
   
   // Getters
@@ -34,150 +32,142 @@ class AsistenciaProvider with ChangeNotifier {
   String get jornadaActual => _jornadaActual;
   ApiService get apiService => _apiService;
 
-  /// Fichas de la jornada actual
+  /// Devuelve las fichas de la jornada actual
   List<FichaModel> get fichasJornadaActual {
     if (_jornadaActual.isEmpty) return [];
-    String normalizar(String s) => s.trim().toLowerCase()
-      .replaceAll('á', 'a')
-      .replaceAll('é', 'e')
-      .replaceAll('í', 'i')
-      .replaceAll('ó', 'o')
-      .replaceAll('ú', 'u');
-    return _fichas.where((f) {
-      final fichaJornada = normalizar(f.jornadaFormacion.jornada);
-      final actual = normalizar(_jornadaActual);
-      print('Comparando ficha:  [33m${f.numeroFicha} [0m jornadaFicha=\' [36m${f.jornadaFormacion.jornada} [0m\' vs actual=\' [35m$actual [0m\'');
-      return fichaJornada == actual;
-    }).toList();
+    return _fichas.where((f) => _normalizar(f.jornadaFormacion.jornada) == _normalizar(_jornadaActual)).toList();
   }
 
-  /// Asistencias de fichas de la jornada actual
+  /// Devuelve las asistencias de las fichas de la jornada actual
   List<Asistencia> get asistenciasJornadaActual {
     final fichasIds = fichasJornadaActual.map((f) => f.numeroFicha.toString()).toSet();
-    String jornadaActualNormalizada = _jornadaActual.trim().toLowerCase().replaceAll('á', 'a').replaceAll('é', 'e').replaceAll('í', 'i').replaceAll('ó', 'o').replaceAll('ú', 'u');
-    return _asistencias.where((a) {
-      String jornadaAsistenciaNormalizada = a.jornada.trim().toLowerCase().replaceAll('á', 'a').replaceAll('é', 'e').replaceAll('í', 'i').replaceAll('ó', 'o').replaceAll('ú', 'u');
-      // Debug print para ver los valores comparados
-      // ignore: avoid_print
-      print('Comparando asistencia: ficha=${a.ficha}, jornadaAsistencia=$jornadaAsistenciaNormalizada vs jornadaActual=$jornadaActualNormalizada');
-      return fichasIds.contains(a.ficha) && jornadaAsistenciaNormalizada == jornadaActualNormalizada;
-    }).toList();
+    final jornadaActualNorm = _normalizar(_jornadaActual);
+    return _asistencias.where((a) => fichasIds.contains(a.ficha) && _normalizar(a.jornada) == jornadaActualNorm).toList();
   }
   
-  // Constructor
+  /// Constructor
   AsistenciaProvider({required ApiService apiService}) : _apiService = apiService {
     _init();
-    // _initWebSocket(); // Desactivado porque el servicio fue eliminado
   }
   
-  // Inicialización
+  /// Inicialización del provider
   Future<void> _init() async {
     await cargarDatos();
     _configurarActualizacionAutomatica();
   }
   
-  // Cargar datos iniciales
+  /// Carga todos los datos iniciales
   Future<void> cargarDatos() async {
-    _isLoading = true;
-    _errorMessage = '';
-    notifyListeners();
-
+    _setLoading(true);
+    _clearError();
     try {
-      // Actualizar la jornada actual
-      _jornadaActualId = JornadaConstants.getJornadaActual();
-      _jornadaActual = JornadaConstants.getJornadaString(_jornadaActualId);
-
-      // Cargar estadísticas (no detener si falla)
-      try {
-        _estadisticas = await _apiService.getEstadisticas();
-      } catch (e) {
-        _errorMessage += 'Error al cargar estadísticas: $e\n';
-        _estadisticas = {};
-      }
-
-      // Cargar fichas (siempre intentar)
-      try {
-        _fichas = await _apiService.getFichas();
-      } catch (e) {
-        _errorMessage += 'Error al cargar fichas: $e\n';
-        _fichas = [];
-      }
-
-      // Si hay una jornada activa, cargar sus asistencias
-      if (_jornadaActualId != 0) {
-        try {
-          _asistencias = await _apiService.getAsistenciasPorJornada(_jornadaActualId);
-        } catch (e) {
-          _errorMessage += 'Error al cargar asistencias: $e\n';
-          _asistencias = [];
-        }
-      }
-
-      _isLoading = false;
-      notifyListeners();
+      _jornadaActual = JornadaConstants.getJornadaString(JornadaConstants.getJornadaActual());
+      await _cargarEstadisticas();
+      await _cargarFichas();
+      await _cargarAsistencias();
     } catch (e) {
-      _errorMessage += 'Error general al cargar los datos: $e';
-      _isLoading = false;
-      notifyListeners();
+      _setError('Error general al cargar los datos: $e');
+    } finally {
+      _setLoading(false);
     }
   }
 
-  // Configurar actualización automática
+  /// Configura la actualización automática periódica
   void _configurarActualizacionAutomatica() {
-    // Cancelar el temporizador existente si lo hay
     _refreshTimer?.cancel();
-    
-    // Configurar un nuevo temporizador
     _refreshTimer = Timer.periodic(
       const Duration(seconds: ApiConstants.refreshTime),
       (timer) => _actualizarDatos(),
     );
   }
   
-  // Actualizar datos
+  /// Actualiza los datos principales
   Future<void> _actualizarDatos() async {
     try {
-      // Verificar si la jornada ha cambiado
-      final nuevaJornadaId = JornadaConstants.getJornadaActual();
-      final jornadaCambio = nuevaJornadaId != _jornadaActualId;
-      
-      if (jornadaCambio) {
-        _jornadaActualId = nuevaJornadaId;
-        _jornadaActual = JornadaConstants.getJornadaString(nuevaJornadaId);
+      final nuevaJornada = JornadaConstants.getJornadaActual();
+      if (JornadaConstants.getJornadaString(nuevaJornada) != _jornadaActual) {
+        _jornadaActual = JornadaConstants.getJornadaString(nuevaJornada);
       }
-      
-      // Actualizar estadísticas
-      _estadisticas = await _apiService.getEstadisticas();
-      
-      // Cargar fichas
-      _fichas = await _apiService.getFichas();
-
-      // Si hay una jornada activa, actualizar sus asistencias
-      if (_jornadaActualId != 0) {
-        _asistencias = await _apiService.getAsistenciasPorJornada(_jornadaActualId);
-      } else {
-        _asistencias = [];
-      }
-      
+      await _cargarEstadisticas();
+      await _cargarFichas();
+      await _cargarAsistencias();
       notifyListeners();
     } catch (e) {
-      // No actualizamos el estado de error para no interrumpir la vista actual
       debugPrint('Error al actualizar datos: $e');
     }
   }
-  
-  // Obtener estadísticas de una jornada específica
+
+  /// Carga estadísticas desde el API
+  Future<void> _cargarEstadisticas() async {
+    try {
+      _estadisticas = await _apiService.getEstadisticas();
+    } catch (e) {
+      _setError('Error al cargar estadísticas: $e');
+      _estadisticas = {};
+    }
+  }
+
+  /// Carga fichas desde el API
+  Future<void> _cargarFichas() async {
+    try {
+      _fichas = await _apiService.getFichas();
+    } catch (e) {
+      _setError('Error al cargar fichas: $e');
+      _fichas = [];
+    }
+  }
+
+  /// Carga asistencias de la jornada actual desde el API
+  Future<void> _cargarAsistencias() async {
+    if (_jornadaActual.isEmpty) {
+      _asistencias = [];
+      return;
+    }
+    try {
+      _asistencias = await _apiService.getAsistenciasPorJornada(int.parse(_jornadaActual));
+    } catch (e) {
+      _setError('Error al cargar asistencias: $e');
+      _asistencias = [];
+    }
+  }
+
+  /// Devuelve las estadísticas de una jornada específica
   EstadisticasJornada? getEstadisticasJornada(String jornada) {
     return _estadisticas[jornada];
   }
   
-  // Obtener asistencias filtradas por programa
+  /// Devuelve las asistencias filtradas por programa
   List<Asistencia> getAsistenciasPorPrograma(String programa) {
     return _asistencias.where((a) => a.programa == programa).toList();
   }
   
-  // Método estático para facilitar el acceso al provider
+  /// Acceso estático al provider
   static AsistenciaProvider of(context, {bool listen = true}) {
     return Provider.of<AsistenciaProvider>(context, listen: listen);
+  }
+
+  // --- Métodos privados auxiliares ---
+
+  String _normalizar(String s) {
+    return s.trim().toLowerCase()
+      .replaceAll('á', 'a')
+      .replaceAll('é', 'e')
+      .replaceAll('í', 'i')
+      .replaceAll('ó', 'o')
+      .replaceAll('ú', 'u');
+  }
+
+  void _setLoading(bool value) {
+    _isLoading = value;
+    notifyListeners();
+  }
+
+  void _setError(String message) {
+    _errorMessage += message + '\n';
+    notifyListeners();
+  }
+
+  void _clearError() {
+    _errorMessage = '';
   }
 }
