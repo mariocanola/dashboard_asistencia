@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 
 import '../providers/asistencia_provider.dart';
-import '../models/ficha_model.dart';
 import '../widgets/dashboard_header.dart';
 import '../widgets/summary_cards.dart';
 import '../widgets/asistencia_pie_chart.dart';
@@ -29,208 +28,221 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isUltraWide = size.width > 2500; // 4K o más
+    final isLarge = size.width > 1800;
+
+    double basePadding = isUltraWide ? 80.0 : isLarge ? 40.0 : 16.0;
+    double baseFontSize = isUltraWide ? 38.0 : isLarge ? 24.0 : 14.0;
+    double maxWidth = isUltraWide ? 2200 : isLarge ? 1600 : 1200;
+
+    final estadisticas = Provider.of<AsistenciaProvider>(context).estadisticas[Provider.of<AsistenciaProvider>(context).jornadaActual];
+    final totalAprendices = estadisticas?.totalAprendices ?? 0;
+    final totalPresentes = estadisticas?.totalPresentes ?? 0;
+    final totalAusentes = totalAprendices - totalPresentes;
+    final porcentajeAsistencia = totalAprendices > 0 
+        ? (totalPresentes / totalAprendices * 100).round()
+        : 0;
+
+    final fechaActual = _formatDate(DateTime.now());
+    final horaActual = DateFormat('h:mm a').format(DateTime.now());
+    final jornadaActual = Provider.of<AsistenciaProvider>(context).jornadaActual.isNotEmpty 
+        ? Provider.of<AsistenciaProvider>(context).jornadaActual 
+        : 'Fuera de jornada';
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       body: Consumer<AsistenciaProvider>(
         builder: (context, provider, _) {
-          final estadisticas = provider.estadisticas[provider.jornadaActual];
-          final totalAprendices = estadisticas?.totalAprendices ?? 0;
-          final totalPresentes = estadisticas?.totalPresentes ?? 0;
-          final totalAusentes = totalAprendices - totalPresentes;
-          final porcentajeAsistencia = totalAprendices > 0 
-              ? (totalPresentes / totalAprendices * 100).round() 
-              : 0;
-
-          final fechaActual = _formatDate(DateTime.now());
-          final horaActual = DateFormat('h:mm a').format(DateTime.now());
-          final jornadaActual = provider.jornadaActual.isNotEmpty 
-              ? provider.jornadaActual 
-              : 'Fuera de jornada';
-
           return SafeArea(
             child: SingleChildScrollView(
-              padding: EdgeInsets.all(16.w),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header section
-                  DashboardHeader(
-                    fecha: fechaActual,
-                    hora: horaActual,
-                    jornada: jornadaActual,
-                  ),
-                  SizedBox(height: 24.h),
+              padding: EdgeInsets.all(basePadding),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: maxWidth),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header section
+                      DashboardHeader(
+                        fecha: fechaActual,
+                        hora: horaActual,
+                        jornada: jornadaActual,
+                      ),
+                      SizedBox(height: basePadding),
 
-                  // Summary cards section
-                  Container(
-                    constraints: BoxConstraints(
-                      maxWidth: 1200.w,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                      // Summary cards section
+                      Container(
+                        constraints: BoxConstraints(
+                          maxWidth: maxWidth,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              flex: 2,
-                              child: SummaryCards(
-                                totalFichas: provider.fichas.length,
-                                totalPresentes: totalPresentes,
-                                totalAusentes: totalAusentes,
-                                porcentajeAsistencia: porcentajeAsistencia,
-                              ),
-                            ),
-                            SizedBox(width: 16.w),
-                            Expanded(
-                              flex: 1,
-                              child: Container(
-                                padding: EdgeInsets.all(16.w),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12.r),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
+                            Row(
+                              children: [
+                                Expanded(
+                                  flex: 2,
+                                  child: SummaryCards(
+                                    totalFichas: provider.fichas.length,
+                                    totalPresentes: totalPresentes,
+                                    totalAusentes: totalAusentes,
+                                    porcentajeAsistencia: porcentajeAsistencia,
+                                  ),
                                 ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Porcentaje de Asistencia',
-                                      style: TextStyle(
-                                        fontSize: 14.sp,
-                                        fontWeight: FontWeight.w500,
-                                        color: const Color(0xFF4B5563),
-                                      ),
-                                    ),
-                                    SizedBox(height: 8.h),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            '${porcentajeAsistencia}%',
-                                            style: TextStyle(
-                                              fontSize: 24.sp,
-                                              fontWeight: FontWeight.bold,
-                                              color: const Color(0xFF10B981),
-                                            ),
-                                          ),
-                                        ),
-                                        Icon(
-                                          Icons.trending_up,
-                                          color: const Color(0xFF10B981),
-                                          size: 24.w,
+                                SizedBox(width: 16.w),
+                                Expanded(
+                                  flex: 1,
+                                  child: Container(
+                                    padding: EdgeInsets.all(16.w),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12.r),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.05),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 4),
                                         ),
                                       ],
                                     ),
-                                  ],
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Porcentaje de Asistencia',
+                                          style: TextStyle(
+                                            fontSize: baseFontSize * 1.5,
+                                            fontWeight: FontWeight.w500,
+                                            color: const Color(0xFF4B5563),
+                                          ),
+                                        ),
+                                        SizedBox(height: 8.h),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                '${porcentajeAsistencia}%',
+                                                style: TextStyle(
+                                                  fontSize: baseFontSize * 2.0,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: const Color(0xFF10B981),
+                                                ),
+                                              ),
+                                            ),
+                                            Icon(
+                                              Icons.trending_up,
+                                              color: const Color(0xFF10B981),
+                                              size: 24.w,
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 24.h),
+                      ),
+                      SizedBox(height: basePadding),
 
-                  // Charts section
-                  Container(
-                    constraints: BoxConstraints(
-                      maxWidth: 1200.w,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                      // Charts section
+                      Container(
+                        constraints: BoxConstraints(
+                          maxWidth: maxWidth,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              flex: 1,
-                              child: Container(
-                                padding: EdgeInsets.all(16.w),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12.r),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
+                            Row(
+                              children: [
+                                Expanded(
+                                  flex: 1,
+                                  child: Container(
+                                    padding: EdgeInsets.all(16.w),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12.r),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.05),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Distribución de Asistencia',
-                                      style: TextStyle(
-                                        fontSize: 14.sp,
-                                        fontWeight: FontWeight.w500,
-                                        color: const Color(0xFF4B5563),
-                                      ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Distribución de Asistencia',
+                                          style: TextStyle(
+                                            fontSize: baseFontSize * 1.5,
+                                            fontWeight: FontWeight.w500,
+                                            color: const Color(0xFF4B5563),
+                                          ),
+                                        ),
+                                        SizedBox(height: 16.h),
+                                        AsistenciaPieChart(estadisticas: estadisticas),
+                                      ],
                                     ),
-                                    SizedBox(height: 16.h),
-                                    AsistenciaPieChart(estadisticas: estadisticas),
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            ),
-                            SizedBox(width: 16.w),
-                            Expanded(
-                              flex: 1,
-                              child: Container(
-                                padding: EdgeInsets.all(16.w),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12.r),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
+                                SizedBox(width: 16.w),
+                                Expanded(
+                                  flex: 1,
+                                  child: Container(
+                                    padding: EdgeInsets.all(16.w),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12.r),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.05),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Asistencia por Ficha',
-                                      style: TextStyle(
-                                        fontSize: 14.sp,
-                                        fontWeight: FontWeight.w500,
-                                        color: const Color(0xFF4B5563),
-                                      ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Asistencia por Ficha',
+                                          style: TextStyle(
+                                            fontSize: baseFontSize * 1.5,
+                                            fontWeight: FontWeight.w500,
+                                            color: const Color(0xFF4B5563),
+                                          ),
+                                        ),
+                                        SizedBox(height: 16.h),
+                                        FichasBarChart(fichas: provider.fichasJornadaActual),
+                                      ],
                                     ),
-                                    SizedBox(height: 16.h),
-                                    FichasBarChart(fichas: provider.fichasJornadaActual),
-                                  ],
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 32.h),
+                      ),
+                      SizedBox(height: basePadding),
 
-                  // Fichas section
-                  Text(
-                    'Fichas de caracterización',
-                    style: TextStyle(
-                      fontSize: 18.sp,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF1E293B),
-                    ),
+                      // Fichas section
+                      Text(
+                        'Fichas de caracterización',
+                        style: TextStyle(
+                          fontSize: baseFontSize * 1.8,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1E293B),
+                        ),
+                      ),
+                      SizedBox(height: 12.h),
+                    ],
                   ),
-                  SizedBox(height: 12.h),
-                ],
+                ),
               ),
             ),
           );
