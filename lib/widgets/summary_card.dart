@@ -62,6 +62,7 @@ class SummaryCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -109,10 +110,12 @@ class SummaryCard extends StatelessWidget {
                   child: Text(
                     value,
                     style: TextStyle(
-                      fontSize: 28.sp,
+                      fontSize: 24.sp,
                       fontWeight: FontWeight.bold,
                       color: const Color(0xFF1E293B),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 Container(

@@ -57,20 +57,7 @@ class AsistenciaPieChart extends StatelessWidget {
     ];
 
     if (totalAprendices == 0) {
-      return SizedBox(
-        height: 200,
-        child: Center(
-          child: Text(
-            'No hay datos de asistencia para mostrar',
-            style: TextStyle(
-              color: Colors.grey[500],
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      );
+      return _buildEmptyState();
     }
 
     return Column(
@@ -128,6 +115,44 @@ class AsistenciaPieChart extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  /// Construye el estado vacío cuando no hay datos
+  Widget _buildEmptyState() {
+    return SizedBox(
+      height: 220,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.pie_chart_outline,
+              size: 48,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No hay datos de asistencia para mostrar',
+              style: TextStyle(
+                color: Colors.grey[500],
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Los datos aparecerán cuando se registren asistencias',
+              style: TextStyle(
+                color: Colors.grey[400],
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

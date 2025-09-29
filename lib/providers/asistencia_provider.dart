@@ -4,12 +4,17 @@ import 'package:provider/provider.dart';
 import '../utils/constants.dart';
 
 import '../models/asistencia_model.dart';
+import '../models/asistencia_detalle_model.dart';
 import '../models/estadisticas_model.dart';
 import '../models/ficha_model.dart';
+import '../models/websocket_event.dart';
 import '../services/api_service.dart';
+import '../services/websocket_pusher_service.dart';
+import '../utils/websocket_constants.dart';
 
 class AsistenciaProvider with ChangeNotifier {
   final ApiService _apiService;
+  final dynamic _webSocketService;
 
   // Estado de carga
   bool _isLoading = false;
@@ -19,9 +24,18 @@ class AsistenciaProvider with ChangeNotifier {
   // Datos
   Map<String, EstadisticasJornada> _estadisticas = {};
   List<Asistencia> _asistencias = [];
+  List<AsistenciaDetalle> _asistenciasDetalle = [];
   List<FichaModel> _fichas = [];
   String _jornadaActual = '';
   Timer? _refreshTimer;
+
+  // Últimas asistencias recibidas por WebSocket (para mostrar en tiempo real)
+  final List<WebSocketEvent> _ultimasAsistenciasWS = [];
+
+  // WebSocket
+  String _webSocketState = WebSocketConstants.estadoDesconectado;
+  StreamSubscription? _webSocketEventSubscription;
+  StreamSubscription? _webSocketStateSubscription;
 
   // Getters
   bool get isLoading => _isLoading;
@@ -30,9 +44,18 @@ class AsistenciaProvider with ChangeNotifier {
   bool get hasError => _errorMessage.isNotEmpty;
   Map<String, EstadisticasJornada> get estadisticas => _estadisticas;
   List<Asistencia> get asistencias => _asistencias;
+  List<AsistenciaDetalle> get asistenciasDetalle => _asistenciasDetalle;
   List<FichaModel> get fichas => _fichas;
   String get jornadaActual => _jornadaActual;
   ApiService get apiService => _apiService;
+  dynamic get webSocketService => _webSocketService;
+  String get webSocketState => _webSocketState;
+  bool get isWebSocketConnected =>
+      _webSocketState == WebSocketConstants.estadoConectado;
+
+  /// Últimas 10 asistencias recibidas por WebSocket
+  List<WebSocketEvent> get ultimasAsistenciasWebSocket =>
+      List.unmodifiable(_ultimasAsistenciasWS);
 
   /// Devuelve las fichas de la jornada actual
   List<FichaModel> get fichasJornadaActual {
@@ -57,8 +80,11 @@ class AsistenciaProvider with ChangeNotifier {
   }
 
   /// Constructor
-  AsistenciaProvider({required ApiService apiService})
-      : _apiService = apiService {
+  AsistenciaProvider({
+    required ApiService apiService,
+    dynamic webSocketService,
+  })  : _apiService = apiService,
+        _webSocketService = webSocketService ?? WebSocketPusherService() {
     _init();
   }
 
@@ -66,6 +92,7 @@ class AsistenciaProvider with ChangeNotifier {
   Future<void> _init() async {
     await cargarDatos();
     _configurarActualizacionAutomatica();
+    _configurarWebSocket();
   }
 
   /// Carga todos los datos iniciales
@@ -149,23 +176,32 @@ class AsistenciaProvider with ChangeNotifier {
     }
   }
 
-  /// Carga asistencias de la jornada actual desde el API
+  /// Carga asistencias desde el API
+  /// Obtiene todas las jornadas del día actual
   Future<void> _cargarAsistencias() async {
-    if (_jornadaActual.isEmpty) {
-      _asistencias = [];
-      return;
-    }
-
     try {
-      final jornadaId = JornadaConstants.getJornadaActual();
-      if (jornadaId > 0) {
-        _asistencias = await _apiService.getAsistenciasPorJornada(jornadaId);
-      } else {
-        _asistencias = [];
-      }
+      // Obtener TODAS las asistencias del día actual (sin filtrar por jornada)
+      // El backend devolverá todas las jornadas agrupadas en "por_jornada"
+      final response = await _apiService.getAsistenciasPorJornada(
+        // No enviar jornadaId para obtener todas las jornadas
+        jornadaId: null,
+        // Usar fecha actual automáticamente
+        fecha: DateTime.now(),
+      );
+
+      _asistenciasDetalle = response.asistencias;
+
+      debugPrint('✅ Asistencias cargadas: ${_asistenciasDetalle.length}');
+      debugPrint('📊 Jornadas: ${response.porJornada.keys.toList()}');
+
+      // Mostrar detalle por jornada
+      response.porJornada.forEach((jornada, asistencias) {
+        debugPrint('   - $jornada: ${asistencias.length} asistencias');
+      });
     } catch (e) {
-      debugPrint('Error al cargar asistencias: $e');
+      debugPrint('❌ Error al cargar asistencias: $e');
       _asistencias = [];
+      _asistenciasDetalle = [];
     }
   }
 
@@ -216,10 +252,127 @@ class AsistenciaProvider with ChangeNotifier {
     _errorMessage = '';
   }
 
+  // --- Métodos WebSocket ---
+
+  /// Configura el WebSocket y sus suscripciones
+  void _configurarWebSocket() {
+    // Suscribirse a cambios de estado del WebSocket
+    _webSocketStateSubscription =
+        _webSocketService.connectionStateStream.listen(
+      (state) {
+        _webSocketState = state;
+        notifyListeners();
+      },
+    );
+
+    // Suscribirse a eventos del WebSocket
+    _webSocketEventSubscription = _webSocketService.eventStream.listen(
+      _manejarEventoWebSocket,
+      onError: (error) {
+        debugPrint('❌ Error en stream de eventos WebSocket: $error');
+      },
+    );
+
+    // Inicializar WebSocket
+    _inicializarWebSocket();
+  }
+
+  /// Inicializa la conexión WebSocket
+  Future<void> _inicializarWebSocket() async {
+    try {
+      await _webSocketService.initialize();
+      _webSocketService.subscribeToAllChannels();
+      debugPrint('✅ WebSocket configurado y suscrito a canales');
+    } catch (e) {
+      debugPrint('❌ Error al inicializar WebSocket: $e');
+      _setError('Error al conectar WebSocket: $e');
+    }
+  }
+
+  /// Maneja eventos recibidos del WebSocket
+  void _manejarEventoWebSocket(WebSocketEvent event) {
+    try {
+      if (event.isNuevaAsistencia) {
+        _procesarNuevaAsistencia(event);
+      } else if (event.isQrScanned) {
+        _procesarQrScanned(event);
+      }
+
+      // Notificar a los listeners sobre el cambio
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ Error al procesar evento WebSocket: $e');
+    }
+  }
+
+  /// Procesa eventos de nueva asistencia registrada
+  void _procesarNuevaAsistencia(WebSocketEvent event) {
+    debugPrint('📝 Nueva asistencia - ID: ${event.asistenciaId}, '
+        'Aprendiz: ${event.aprendizNombre}, '
+        'Estado: ${event.estadoAsistencia}, '
+        'Ficha: ${event.fichaId}, '
+        'Jornada: ${event.jornada}');
+
+    // Agregar a la lista de últimas asistencias
+    _ultimasAsistenciasWS.insert(0, event);
+
+    // Mantener solo las últimas 10
+    if (_ultimasAsistenciasWS.length > 10) {
+      _ultimasAsistenciasWS.removeRange(10, _ultimasAsistenciasWS.length);
+    }
+
+    // Actualizar datos desde el API para tener la información completa
+    _actualizarDatosDesdeWebSocket();
+  }
+
+  /// Procesa eventos de QR escaneado
+  void _procesarQrScanned(WebSocketEvent event) {
+    debugPrint(
+        '📱 Procesando QR escaneado: Ficha ${event.fichaId}, Aprendiz ${event.aprendizId}');
+
+    // Aquí podrías procesar el escaneo del QR
+    // Por ejemplo, actualizar estadísticas en tiempo real
+    _actualizarDatosDesdeWebSocket();
+  }
+
+  /// Actualiza los datos cuando se recibe un evento WebSocket
+  Future<void> _actualizarDatosDesdeWebSocket() async {
+    try {
+      // Solo actualizar si no estamos en proceso de carga
+      if (!_isLoading && !_isUpdating) {
+        _setUpdating(true);
+
+        // Actualizar datos en paralelo
+        await Future.wait([
+          _cargarEstadisticas(),
+          _cargarAsistencias(),
+        ]);
+
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('❌ Error al actualizar datos desde WebSocket: $e');
+    } finally {
+      _setUpdating(false);
+    }
+  }
+
+  /// Conecta manualmente el WebSocket
+  Future<void> conectarWebSocket() async {
+    await _webSocketService.connect();
+  }
+
+  /// Desconecta manualmente el WebSocket
+  Future<void> desconectarWebSocket() async {
+    await _webSocketService.disconnect();
+  }
+
   /// Limpia los recursos al destruir el provider
   @override
   void dispose() {
     _refreshTimer?.cancel();
+    _webSocketEventSubscription?.cancel();
+    _webSocketStateSubscription?.cancel();
     super.dispose();
   }
 }

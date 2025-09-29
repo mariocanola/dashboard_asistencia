@@ -5,7 +5,13 @@ class ApiConstants {
   /// Cambia esta IP por la correcta de tu servidor
   static const String baseUrl = 'http://192.168.100.79:8000/api';
 
-  /// Endpoints
+  /// Endpoints de asistencias (según README backend)
+  static const String asistenciaEntrada = '/asistencia/entrada';
+  static const String asistenciaSalida = '/asistencia/salida';
+  static const String asistenciaJornada = '/asistencia/jornada';
+  static const String asistenciaFichas = '/asistencia/fichas';
+
+  /// Endpoints anteriores (mantener para compatibilidad si es necesario)
   static const String asistencias = '/asistencias';
   static const String fichas = '/fichas-caracterizacion';
   static const String aprendicesPorFicha = '/fichas-caracterizacion/aprendices';

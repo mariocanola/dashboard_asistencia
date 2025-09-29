@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 
-import '../models/asistencia_model.dart';
+import '../models/asistencia_detalle_model.dart';
 import '../models/estadisticas_model.dart';
 import '../utils/constants.dart';
 import '../models/respuesta_general.dart';
@@ -16,16 +18,79 @@ class ApiService {
       : httpClient = httpClient ?? http.Client(),
         baseUrl = baseUrl ?? ApiConstants.baseUrl;
 
-  /// Obtiene las estadísticas de asistencia
-  Future<Map<String, EstadisticasJornada>> getEstadisticas() async {
-    // Retornar estadísticas vacías hasta que haya datos reales de asistencia
-    return {};
+  /// Obtiene las asistencias por jornada desde el nuevo endpoint
+  /// Endpoint: GET /api/asistencia/jornada?fecha=Y-m-d
+  /// Si no se especifica jornada_id, trae todas las jornadas
+  /// Si no se especifica fecha, usa la fecha actual
+  Future<AsistenciaJornadaResponse> getAsistenciasPorJornada({
+    int? jornadaId,
+    DateTime? fecha,
+  }) async {
+    // Usar fecha actual si no se especifica
+    final fechaStr = fecha != null
+        ? DateFormat('yyyy-MM-dd').format(fecha)
+        : DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+    String endpoint = ApiConstants.asistenciaJornada;
+    final params = <String>[];
+
+    // Solo agregar jornada_id si se especifica (para filtrar por jornada específica)
+    // Si no se envía, el backend devuelve todas las jornadas
+    if (jornadaId != null && jornadaId > 0) {
+      params.add('jornada_id=$jornadaId');
+    }
+
+    // Siempre agregar la fecha
+    params.add('fecha=$fechaStr');
+
+    if (params.isNotEmpty) {
+      endpoint += '?${params.join('&')}';
+    }
+
+    try {
+      debugPrint('🔍 Consultando asistencias: $endpoint');
+      final response = await _get(endpoint);
+      final Map<String, dynamic> data = _decodeResponse(response);
+
+      debugPrint('✅ Asistencias obtenidas: ${data['total_asistencias'] ?? 0}');
+      debugPrint(
+          '📊 Jornadas encontradas: ${(data['por_jornada'] as Map?)?.keys.toList() ?? []}');
+
+      return AsistenciaJornadaResponse.fromJson(data);
+    } catch (e) {
+      debugPrint('❌ Error al obtener asistencias por jornada: $e');
+      rethrow;
+    }
   }
 
-  /// Obtiene las asistencias por jornada
-  Future<List<Asistencia>> getAsistenciasPorJornada(int jornadaId) async {
-    // Retornar lista vacía hasta que haya datos reales de asistencia
-    return [];
+  /// Obtiene las estadísticas de asistencia calculadas desde las asistencias
+  Future<Map<String, EstadisticasJornada>> getEstadisticas() async {
+    try {
+      // Obtener asistencias del día actual
+      final response = await getAsistenciasPorJornada();
+
+      // Calcular estadísticas por jornada
+      final Map<String, EstadisticasJornada> estadisticas = {};
+
+      response.porJornada.forEach((jornada, asistencias) {
+        // Contar presentes (asistencias con entrada)
+        final presentes = asistencias.length;
+
+        // Para calcular el total, necesitaríamos saber cuántos aprendices esperados hay
+        // Por ahora usamos el conteo de asistencias
+        estadisticas[jornada] = EstadisticasJornada(
+          jornada: jornada,
+          totalAprendices: presentes, // Esto debería venir de otra fuente
+          totalPresentes: presentes,
+          programas: [], // Agrupar por programas si es necesario
+        );
+      });
+
+      return estadisticas;
+    } catch (e) {
+      debugPrint('❌ Error al obtener estadísticas: $e');
+      return {};
+    }
   }
 
   /// Obtiene las fichas de caracterización
@@ -80,7 +145,30 @@ class ApiService {
   /// Verifica el código de estado de la respuesta
   void _checkStatusCode(http.Response response) {
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('Error en la petición: ${response.statusCode}');
+      String errorMessage = 'Error en la petición: ${response.statusCode}';
+
+      // Mensajes específicos para códigos comunes
+      switch (response.statusCode) {
+        case 500:
+          errorMessage =
+              'Error del servidor (500): El backend Laravel tiene un problema interno';
+          break;
+        case 404:
+          errorMessage =
+              'Endpoint no encontrado (404): Verifica que la ruta exista en Laravel';
+          break;
+        case 403:
+          errorMessage =
+              'Acceso denegado (403): Problema de permisos en Laravel';
+          break;
+        case 401:
+          errorMessage = 'No autorizado (401): Problema de autenticación';
+          break;
+      }
+
+      debugPrint('❌ API Error: $errorMessage');
+      debugPrint('📄 Response body: ${response.body}');
+      throw Exception(errorMessage);
     }
   }
 

@@ -9,6 +9,9 @@ import '../widgets/summary_cards.dart';
 import '../widgets/asistencia_pie_chart.dart';
 import '../widgets/fichas_bar_chart.dart';
 import '../widgets/fichas_caracterizacion_list.dart';
+import '../widgets/websocket_status_widget.dart';
+import '../widgets/asistencias_tiempo_real_widget.dart';
+import '../widgets/asistencias_del_dia_widget.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -51,12 +54,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final provider = Provider.of<AsistenciaProvider>(context);
     final estadisticas = provider.estadisticas[provider.jornadaActual];
+
+    // Debug: Mostrar información de las estadísticas
+    debugPrint('🔍 Dashboard - Jornada actual: ${provider.jornadaActual}');
+    debugPrint(
+        '🔍 Dashboard - Estadísticas disponibles: ${provider.estadisticas.keys.toList()}');
+    debugPrint(
+        '🔍 Dashboard - Estadísticas para jornada actual: $estadisticas');
+
     final totalAprendices = estadisticas?.totalAprendices ?? 0;
     final totalPresentes = estadisticas?.totalPresentes ?? 0;
     final totalAusentes = totalAprendices - totalPresentes;
     final porcentajeAsistencia = totalAprendices > 0
         ? (totalPresentes / totalAprendices * 100).round()
         : 0;
+
+    debugPrint(
+        '🔍 Dashboard - Total aprendices: $totalAprendices, Presentes: $totalPresentes, Ausentes: $totalAusentes, %: $porcentajeAsistencia%');
 
     final fechaActual = _formatDate(DateTime.now());
     final horaActual = DateFormat('h:mm a').format(DateTime.now());
@@ -275,11 +289,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Header section
-                        DashboardHeader(
-                          fecha: fechaActual,
-                          hora: horaActual,
-                          jornada: jornadaActual,
-                          isUpdating: providerConsumer.isUpdating,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: DashboardHeader(
+                                fecha: fechaActual,
+                                hora: horaActual,
+                                jornada: jornadaActual,
+                                isUpdating: providerConsumer.isUpdating,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            const WebSocketStatusWidget(),
+                          ],
                         ),
                         SizedBox(height: basePadding),
 
@@ -559,6 +581,96 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ),
                                 ],
                               ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: basePadding),
+
+                        // Asistencias en tiempo real section
+                        Container(
+                          constraints: BoxConstraints(
+                            maxWidth: maxWidth,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: EdgeInsets.all(12.w),
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          Color(0xFF10B981),
+                                          Color(0xFF059669),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(12.r),
+                                    ),
+                                    child: Icon(
+                                      Icons.timeline_rounded,
+                                      color: Colors.white,
+                                      size: 24.w,
+                                    ),
+                                  ),
+                                  SizedBox(width: 16.w),
+                                  Text(
+                                    'Actividad Reciente',
+                                    style: TextStyle(
+                                      fontSize: baseFontSize * 1.8,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF1E293B),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 16.h),
+                              const AsistenciasTiempoRealWidget(),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: basePadding),
+
+                        // Asistencias del día por jornada
+                        Container(
+                          constraints: BoxConstraints(
+                            maxWidth: maxWidth,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: EdgeInsets.all(12.w),
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          Color(0xFF3B82F6),
+                                          Color(0xFF1D4ED8),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(12.r),
+                                    ),
+                                    child: Icon(
+                                      Icons.list_alt_rounded,
+                                      color: Colors.white,
+                                      size: 24.w,
+                                    ),
+                                  ),
+                                  SizedBox(width: 16.w),
+                                  Text(
+                                    'Asistencias del Día',
+                                    style: TextStyle(
+                                      fontSize: baseFontSize * 1.8,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF1E293B),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 16.h),
+                              const AsistenciasDelDiaWidget(),
                             ],
                           ),
                         ),
