@@ -11,14 +11,12 @@ import 'utils/constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initializeDateFormatting('es', null); // Inicializa el locale español para fechas
-  
-  // Cambia este valor a true para usar datos de prueba
-  const bool usarMock = true;
+  await initializeDateFormatting(
+      'es', null); // Inicializa el locale español para fechas
 
-  // Inicializar el servicio de API (real o mock)
+  // Inicializar el servicio de API
   final apiService = ApiService();
-  
+
   runApp(
     MultiProvider(
       providers: [
@@ -48,9 +46,7 @@ class MyApp extends StatelessWidget {
             colorScheme: ColorScheme.light(
               primary: Color(AppThemes.primaryColor),
               secondary: Color(AppThemes.secondaryColor),
-              background: Color(AppThemes.backgroundColor),
               surface: Colors.white,
-              onBackground: Color(AppThemes.textColor),
               onSurface: Color(AppThemes.textColor),
               brightness: Brightness.light,
             ),

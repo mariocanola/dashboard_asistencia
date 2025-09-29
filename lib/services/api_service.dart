@@ -11,27 +11,21 @@ import '../models/ficha_model.dart';
 class ApiService {
   final String baseUrl;
   final http.Client httpClient;
-  
+
   ApiService({http.Client? httpClient, String? baseUrl})
       : httpClient = httpClient ?? http.Client(),
         baseUrl = baseUrl ?? ApiConstants.baseUrl;
 
   /// Obtiene las estadísticas de asistencia
   Future<Map<String, EstadisticasJornada>> getEstadisticas() async {
-    final response = await _get('${ApiConstants.estadisticas}');
-    final Map<String, dynamic> data = _decodeResponse(response);
-    final Map<String, EstadisticasJornada> estadisticas = {};
-    for (var entry in data.entries) {
-      estadisticas[entry.key] = EstadisticasJornada.fromJson(entry.value);
-    }
-    return estadisticas;
+    // Retornar estadísticas vacías hasta que haya datos reales de asistencia
+    return {};
   }
 
   /// Obtiene las asistencias por jornada
   Future<List<Asistencia>> getAsistenciasPorJornada(int jornadaId) async {
-    final response = await _get('${ApiConstants.fichas}/jornada/$jornadaId');
-    final List<dynamic> data = _decodeResponse(response);
-    return data.map((item) => Asistencia.fromJson(item)).toList();
+    // Retornar lista vacía hasta que haya datos reales de asistencia
+    return [];
   }
 
   /// Obtiene las fichas de caracterización
@@ -44,7 +38,7 @@ class ApiService {
 
   /// Obtiene la cantidad de aprendices por ficha
   Future<int> getCantidadAprendicesPorFicha(int fichaId) async {
-    final response = await _get('/fichas-caracterizacion/aprendices/$fichaId');
+    final response = await _get('${ApiConstants.aprendicesPorFicha}/$fichaId');
     final Map<String, dynamic> data = _decodeResponse(response);
     return data['cantidad_aprendices'] ?? 0;
   }
@@ -60,11 +54,17 @@ class ApiService {
   Future<http.Response> _get(String endpoint) async {
     final url = Uri.parse('$baseUrl$endpoint');
     try {
-      final response = await httpClient.get(url, headers: _headers());
+      final response = await httpClient
+          .get(url, headers: _headers())
+          .timeout(const Duration(seconds: 15)); // Reducido de 30 a 15 segundos
       _checkStatusCode(response);
       return response;
+    } on TimeoutException {
+      throw Exception('Timeout: La petición tardó demasiado (15s)');
+    } on http.ClientException {
+      throw Exception('Error de conexión: No se pudo conectar al servidor');
     } catch (e) {
-      throw Exception('Error de conexión: $e');
+      throw Exception('Error de red: $e');
     }
   }
 

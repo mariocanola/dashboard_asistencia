@@ -1,45 +1,42 @@
-# Miscellaneous
-*.class
+# Archivos y carpetas del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos temporales y de logs
 *.log
 *.pyc
 *.swp
-.DS_Store
-.atom/
-.build/
+*.class
 .buildlog/
 .history
-.svn/
-.swiftpm/
-migrate_working_dir/
 
-# IntelliJ related
+# Carpetas y archivos de configuración de editores/IDEs
+.idea/
 *.iml
 *.ipr
 *.iws
-.idea/
+.atom/
+.svn/
+.swiftpm/
+.vscode/
+migrate_working_dir/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
+# Archivos y carpetas generados por Flutter/Dart/Pub
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
-/build/
+build/
+**/build/
+**/doc/api/
+**/ios/Flutter/.last_build_id
 
-# Symbolication related
+# Archivos de símbolos y ofuscación
 app.*.symbols
-
-# Obfuscation related
 app.*.map.json
 
-# Android Studio will place build artifacts here
+# Salidas de compilación de Android Studio
 /android/app/debug
 /android/app/profile
 /android/app/release

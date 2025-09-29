@@ -12,14 +12,12 @@ Depends on all your plugins, and provides a function to register them.
   s.homepage         = 'https://flutter.dev'
   s.license          = { :type => 'BSD' }
   s.author           = { 'Flutter Dev Team' => 'flutter-dev@googlegroups.com' }
-  s.ios.deployment_target = '12.0'
+  s.ios.deployment_target = '13.0'
   s.source_files =  "Classes", "Classes/**/*.{h,m}"
   s.source           = { :path => '.' }
   s.public_header_files = './Classes/**/*.h'
   s.static_framework    = true
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES' }
   s.dependency 'Flutter'
-  s.dependency 'connectivity_plus'
   s.dependency 'path_provider_foundation'
-  s.dependency 'shared_preferences_foundation'
 end

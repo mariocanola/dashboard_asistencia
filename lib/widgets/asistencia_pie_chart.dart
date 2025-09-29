@@ -5,7 +5,8 @@ import '../models/estadisticas_model.dart';
 class AsistenciaPieChart extends StatelessWidget {
   final EstadisticasJornada? estadisticas;
 
-  const AsistenciaPieChart({Key? key, required this.estadisticas}) : super(key: key);
+  const AsistenciaPieChart({Key? key, required this.estadisticas})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -14,17 +15,19 @@ class AsistenciaPieChart extends StatelessWidget {
     int totalAusentes;
 
     if (estadisticas == null || estadisticas!.totalAprendices == 0) {
-      totalAprendices = 1;
-      totalPresentes = 2;
-      totalAusentes = 3;
+      totalAprendices = 0;
+      totalPresentes = 0;
+      totalAusentes = 0;
     } else {
       totalAprendices = estadisticas!.totalAprendices;
       totalPresentes = estadisticas!.totalPresentes;
       totalAusentes = totalAprendices - totalPresentes;
     }
 
-    final double porcentajePresentes = totalAprendices > 0 ? (totalPresentes / totalAprendices * 100) : 0;
-    final double porcentajeAusentes = totalAprendices > 0 ? (totalAusentes / totalAprendices * 100) : 0;
+    final double porcentajePresentes =
+        totalAprendices > 0 ? (totalPresentes / totalAprendices * 100) : 0;
+    final double porcentajeAusentes =
+        totalAprendices > 0 ? (totalAusentes / totalAprendices * 100) : 0;
 
     final List<PieChartSectionData> sections = [
       if (totalPresentes > 0)
@@ -73,36 +76,56 @@ class AsistenciaPieChart extends StatelessWidget {
     return Column(
       children: [
         SizedBox(
-          height: 200,
+          height: 220,
           child: PieChart(
             PieChartData(
               sections: sections,
-              sectionsSpace: 2,
-              centerSpaceRadius: 60,
+              sectionsSpace: 4,
+              centerSpaceRadius: 70,
               startDegreeOffset: -90,
               borderData: FlBorderData(show: false),
-              pieTouchData: PieTouchData(enabled: false),
+              pieTouchData: PieTouchData(
+                enabled: true,
+                touchCallback: (event, response) {
+                  // Agregar interactividad si es necesario
+                },
+              ),
             ),
           ),
         ),
-        const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _LegendItem(
-              color: const Color(0xFF10B981),
-              label: 'Presentes',
-              value: '$totalPresentes',
-              percent: '${porcentajePresentes.toStringAsFixed(1)}%',
+        const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: const Color(0xFFE2E8F0),
+              width: 1,
             ),
-            const SizedBox(width: 24),
-            _LegendItem(
-              color: const Color(0xFFEF4444),
-              label: 'Ausentes',
-              value: '$totalAusentes',
-              percent: '${porcentajeAusentes.toStringAsFixed(1)}%',
-            ),
-          ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _LegendItem(
+                color: const Color(0xFF10B981),
+                label: 'Presentes',
+                value: '$totalPresentes',
+                percent: '${porcentajePresentes.toStringAsFixed(1)}%',
+              ),
+              Container(
+                width: 1,
+                height: 40,
+                color: const Color(0xFFE2E8F0),
+              ),
+              _LegendItem(
+                color: const Color(0xFFEF4444),
+                label: 'Ausentes',
+                value: '$totalAusentes',
+                percent: '${porcentajeAusentes.toStringAsFixed(1)}%',
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -125,32 +148,55 @@ class _LegendItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       children: [
-        Container(
-          width: 16,
-          height: 16,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withOpacity(0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: Color(0xFF374151),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-        ),
-        const SizedBox(width: 6),
+        const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            color: Color(0xFF1F2937),
+          ),
         ),
-        const SizedBox(width: 4),
         Text(
-          '($percent)',
-          style: TextStyle(color: Colors.grey[600], fontSize: 13),
+          percent,
+          style: TextStyle(
+            color: const Color(0xFF6B7280),
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ],
     );
   }
-} 
+}
