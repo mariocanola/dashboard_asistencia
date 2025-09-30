@@ -11,7 +11,9 @@ import '../widgets/fichas_bar_chart.dart';
 import '../widgets/fichas_caracterizacion_list.dart';
 import '../widgets/websocket_status_widget.dart';
 import '../widgets/asistencias_tiempo_real_widget.dart';
-import '../widgets/asistencias_del_dia_widget.dart';
+import '../widgets/optimized_asistencias_widget.dart';
+import '../widgets/realtime_asistencias_widget.dart';
+import '../widgets/ultra_fast_asistencias_widget.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -58,9 +60,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Debug: Mostrar información de las estadísticas
     debugPrint('🔍 Dashboard - Jornada actual: ${provider.jornadaActual}');
     debugPrint(
-        '🔍 Dashboard - Estadísticas disponibles: ${provider.estadisticas.keys.toList()}');
+      '🔍 Dashboard - Estadísticas disponibles: ${provider.estadisticas.keys.toList()}',
+    );
     debugPrint(
-        '🔍 Dashboard - Estadísticas para jornada actual: $estadisticas');
+      '🔍 Dashboard - Estadísticas para jornada actual: $estadisticas',
+    );
 
     final totalAprendices = estadisticas?.totalAprendices ?? 0;
     final totalPresentes = estadisticas?.totalPresentes ?? 0;
@@ -70,7 +74,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         : 0;
 
     debugPrint(
-        '🔍 Dashboard - Total aprendices: $totalAprendices, Presentes: $totalPresentes, Ausentes: $totalAusentes, %: $porcentajeAsistencia%');
+      '🔍 Dashboard - Total aprendices: $totalAprendices, Presentes: $totalPresentes, Ausentes: $totalAusentes, %: $porcentajeAsistencia%',
+    );
 
     final fechaActual = _formatDate(DateTime.now());
     final horaActual = DateFormat('h:mm a').format(DateTime.now());
@@ -90,10 +95,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF667EEA),
-                    Color(0xFF764BA2),
-                  ],
+                  colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
                 ),
               ),
               child: Center(
@@ -131,7 +133,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 child: CircularProgressIndicator(
                                   strokeWidth: 3,
                                   valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white),
+                                    Colors.white,
+                                  ),
                                 ),
                               ),
                             ),
@@ -168,10 +171,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFFEF4444),
-                    Color(0xFFDC2626),
-                  ],
+                  colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
                 ),
               ),
               child: Center(
@@ -273,10 +273,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFFF1F5F9),
-                    Color(0xFFE2E8F0),
-                  ],
+                  colors: [Color(0xFFF1F5F9), Color(0xFFE2E8F0)],
                   stops: [0.0, 1.0],
                 ),
               ),
@@ -307,9 +304,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                         // Summary cards section
                         Container(
-                          constraints: BoxConstraints(
-                            maxWidth: maxWidth,
-                          ),
+                          constraints: BoxConstraints(maxWidth: maxWidth),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -340,12 +335,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             const Color(0xFF059669),
                                           ],
                                         ),
-                                        borderRadius:
-                                            BorderRadius.circular(16.r),
+                                        borderRadius: BorderRadius.circular(
+                                          16.r,
+                                        ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: const Color(0xFF10B981)
-                                                .withOpacity(0.3),
+                                            color: const Color(
+                                              0xFF10B981,
+                                            ).withOpacity(0.3),
                                             blurRadius: 15,
                                             offset: const Offset(0, 8),
                                           ),
@@ -364,7 +361,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                       .withOpacity(0.2),
                                                   borderRadius:
                                                       BorderRadius.circular(
-                                                          8.r),
+                                                    8.r,
+                                                  ),
                                                 ),
                                                 child: Icon(
                                                   Icons.trending_up_rounded,
@@ -410,7 +408,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                       .withOpacity(0.2),
                                                   borderRadius:
                                                       BorderRadius.circular(
-                                                          20.r),
+                                                    20.r,
+                                                  ),
                                                 ),
                                                 child: Text(
                                                   'Excelente',
@@ -437,9 +436,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                         // Charts section
                         Container(
-                          constraints: BoxConstraints(
-                            maxWidth: maxWidth,
-                          ),
+                          constraints: BoxConstraints(maxWidth: maxWidth),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -451,12 +448,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       padding: EdgeInsets.all(24.w),
                                       decoration: BoxDecoration(
                                         color: Colors.white,
-                                        borderRadius:
-                                            BorderRadius.circular(20.r),
+                                        borderRadius: BorderRadius.circular(
+                                          20.r,
+                                        ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color:
-                                                Colors.black.withOpacity(0.08),
+                                            color: Colors.black.withOpacity(
+                                              0.08,
+                                            ),
                                             blurRadius: 20,
                                             offset: const Offset(0, 8),
                                           ),
@@ -484,7 +483,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                   ),
                                                   borderRadius:
                                                       BorderRadius.circular(
-                                                          12.r),
+                                                    12.r,
+                                                  ),
                                                 ),
                                                 child: Icon(
                                                   Icons.pie_chart_rounded,
@@ -498,15 +498,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                 style: TextStyle(
                                                   fontSize: baseFontSize * 1.4,
                                                   fontWeight: FontWeight.w600,
-                                                  color:
-                                                      const Color(0xFF1E293B),
+                                                  color: const Color(
+                                                    0xFF1E293B,
+                                                  ),
                                                 ),
                                               ),
                                             ],
                                           ),
                                           SizedBox(height: 20.h),
                                           AsistenciaPieChart(
-                                              estadisticas: estadisticas),
+                                            estadisticas: estadisticas,
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -518,12 +520,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       padding: EdgeInsets.all(24.w),
                                       decoration: BoxDecoration(
                                         color: Colors.white,
-                                        borderRadius:
-                                            BorderRadius.circular(20.r),
+                                        borderRadius: BorderRadius.circular(
+                                          20.r,
+                                        ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color:
-                                                Colors.black.withOpacity(0.08),
+                                            color: Colors.black.withOpacity(
+                                              0.08,
+                                            ),
                                             blurRadius: 20,
                                             offset: const Offset(0, 8),
                                           ),
@@ -551,7 +555,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                   ),
                                                   borderRadius:
                                                       BorderRadius.circular(
-                                                          12.r),
+                                                    12.r,
+                                                  ),
                                                 ),
                                                 child: Icon(
                                                   Icons.bar_chart_rounded,
@@ -565,16 +570,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                 style: TextStyle(
                                                   fontSize: baseFontSize * 1.4,
                                                   fontWeight: FontWeight.w600,
-                                                  color:
-                                                      const Color(0xFF1E293B),
+                                                  color: const Color(
+                                                    0xFF1E293B,
+                                                  ),
                                                 ),
                                               ),
                                             ],
                                           ),
                                           SizedBox(height: 20.h),
                                           FichasBarChart(
-                                              fichas: providerConsumer
-                                                  .fichasJornadaActual),
+                                            fichas: providerConsumer
+                                                .fichasJornadaActual,
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -588,9 +595,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                         // Asistencias en tiempo real section
                         Container(
-                          constraints: BoxConstraints(
-                            maxWidth: maxWidth,
-                          ),
+                          constraints: BoxConstraints(maxWidth: maxWidth),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -633,9 +638,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                         // Asistencias del día por jornada
                         Container(
-                          constraints: BoxConstraints(
-                            maxWidth: maxWidth,
-                          ),
+                          constraints: BoxConstraints(maxWidth: maxWidth),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -670,7 +673,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ],
                               ),
                               SizedBox(height: 16.h),
-                              const AsistenciasDelDiaWidget(),
+                              const UltraFastAsistenciasWidget(),
                             ],
                           ),
                         ),
@@ -714,9 +717,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                               SizedBox(height: 16.h),
                               Container(
-                                constraints: BoxConstraints(
-                                  maxWidth: maxWidth,
-                                ),
+                                constraints: BoxConstraints(maxWidth: maxWidth),
                                 padding: EdgeInsets.all(20.w),
                                 decoration: BoxDecoration(
                                   color: Colors.white,
@@ -727,8 +728,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color:
-                                          Colors.black.withValues(alpha: 0.05),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.05,
+                                      ),
                                       blurRadius: 10,
                                       offset: const Offset(0, 4),
                                     ),
@@ -748,8 +750,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                 Color(0xFFD97706),
                                               ],
                                             ),
-                                            borderRadius:
-                                                BorderRadius.circular(8.r),
+                                            borderRadius: BorderRadius.circular(
+                                              8.r,
+                                            ),
                                           ),
                                           child: Icon(
                                             Icons.school_rounded,
@@ -801,7 +804,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       'Septiembre',
       'Octubre',
       'Noviembre',
-      'Diciembre'
+      'Diciembre',
     ];
     final days = [
       'Domingo',
@@ -810,7 +813,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       'Miércoles',
       'Jueves',
       'Viernes',
-      'Sábado'
+      'Sábado',
     ];
     final weekday = days[date.weekday % 7];
     final day = date.day;

@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'providers/asistencia_provider.dart';
+import 'providers/reactive_asistencia_provider.dart';
 import 'services/api_service.dart';
 import 'screens/dashboard_screen.dart';
 import 'utils/constants.dart';
@@ -12,7 +13,9 @@ import 'utils/constants.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting(
-      'es', null); // Inicializa el locale español para fechas
+    'es',
+    null,
+  ); // Inicializa el locale español para fechas
 
   // Inicializar el servicio de API
   final apiService = ApiService();
@@ -22,6 +25,9 @@ void main() async {
       providers: [
         ChangeNotifierProvider(
           create: (_) => AsistenciaProvider(apiService: apiService),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ReactiveAsistenciaProvider(apiService: apiService),
         ),
       ],
       child: const MyApp(),
