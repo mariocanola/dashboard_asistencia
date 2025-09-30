@@ -61,9 +61,11 @@ class AsistenciaProvider with ChangeNotifier {
   List<FichaModel> get fichasJornadaActual {
     if (_jornadaActual.isEmpty) return [];
     return _fichas
-        .where((f) =>
-            _normalizar(f.jornadaFormacion.jornada) ==
-            _normalizar(_jornadaActual))
+        .where(
+          (f) =>
+              _normalizar(f.jornadaFormacion.jornada) ==
+              _normalizar(_jornadaActual),
+        )
         .toList();
   }
 
@@ -73,17 +75,17 @@ class AsistenciaProvider with ChangeNotifier {
         fichasJornadaActual.map((f) => f.numeroFicha.toString()).toSet();
     final jornadaActualNorm = _normalizar(_jornadaActual);
     return _asistencias
-        .where((a) =>
-            fichasIds.contains(a.ficha) &&
-            _normalizar(a.jornada) == jornadaActualNorm)
+        .where(
+          (a) =>
+              fichasIds.contains(a.ficha) &&
+              _normalizar(a.jornada) == jornadaActualNorm,
+        )
         .toList();
   }
 
   /// Constructor
-  AsistenciaProvider({
-    required ApiService apiService,
-    dynamic webSocketService,
-  })  : _apiService = apiService,
+  AsistenciaProvider({required ApiService apiService, dynamic webSocketService})
+      : _apiService = apiService,
         _webSocketService = webSocketService ?? WebSocketPusherService() {
     _init();
   }
@@ -91,7 +93,8 @@ class AsistenciaProvider with ChangeNotifier {
   /// Inicialización del provider
   Future<void> _init() async {
     await cargarDatos();
-    _configurarActualizacionAutomatica();
+    // Comentado: Se reemplaza por eventos WebSocket en tiempo real
+    // _configurarActualizacionAutomatica();
     _configurarWebSocket();
   }
 
@@ -101,11 +104,12 @@ class AsistenciaProvider with ChangeNotifier {
     _clearError();
     try {
       _jornadaActual = JornadaConstants.getJornadaString(
-          JornadaConstants.getJornadaActual());
+        JornadaConstants.getJornadaActual(),
+      );
 
       await _cargarEstadisticas();
       await _cargarFichas();
-      await _cargarAsistencias();
+      await cargarAsistencias();
 
       notifyListeners();
     } catch (e) {
@@ -117,6 +121,8 @@ class AsistenciaProvider with ChangeNotifier {
   }
 
   /// Configura la actualización automática periódica
+  /// COMENTADO: Se reemplaza por eventos WebSocket en tiempo real
+  /*
   void _configurarActualizacionAutomatica() {
     _refreshTimer?.cancel();
     _refreshTimer = Timer.periodic(
@@ -124,14 +130,16 @@ class AsistenciaProvider with ChangeNotifier {
       (timer) => _actualizarDatos(),
     );
   }
+  */
 
   /// Actualiza los datos principales
   Future<void> _actualizarDatos() async {
     _setUpdating(true);
     try {
       final nuevaJornada = JornadaConstants.getJornadaActual();
-      final nuevaJornadaString =
-          JornadaConstants.getJornadaString(nuevaJornada);
+      final nuevaJornadaString = JornadaConstants.getJornadaString(
+        nuevaJornada,
+      );
 
       // Actualizar jornada si cambió
       if (nuevaJornadaString != _jornadaActual) {
@@ -142,7 +150,7 @@ class AsistenciaProvider with ChangeNotifier {
       await Future.wait([
         _cargarEstadisticas(),
         _cargarFichas(),
-        _cargarAsistencias(),
+        cargarAsistencias(),
       ]);
 
       // Notificar a los listeners siempre, incluso si hay errores parciales
@@ -178,7 +186,7 @@ class AsistenciaProvider with ChangeNotifier {
 
   /// Carga asistencias desde el API
   /// Obtiene todas las jornadas del día actual
-  Future<void> _cargarAsistencias() async {
+  Future<void> cargarAsistencias() async {
     try {
       // Obtener TODAS las asistencias del día actual (sin filtrar por jornada)
       // El backend devolverá todas las jornadas agrupadas en "por_jornada"
@@ -258,12 +266,10 @@ class AsistenciaProvider with ChangeNotifier {
   void _configurarWebSocket() {
     // Suscribirse a cambios de estado del WebSocket
     _webSocketStateSubscription =
-        _webSocketService.connectionStateStream.listen(
-      (state) {
-        _webSocketState = state;
-        notifyListeners();
-      },
-    );
+        _webSocketService.connectionStateStream.listen((state) {
+      _webSocketState = state;
+      notifyListeners();
+    });
 
     // Suscribirse a eventos del WebSocket
     _webSocketEventSubscription = _webSocketService.eventStream.listen(
@@ -307,11 +313,13 @@ class AsistenciaProvider with ChangeNotifier {
 
   /// Procesa eventos de nueva asistencia registrada
   void _procesarNuevaAsistencia(WebSocketEvent event) {
-    debugPrint('📝 Nueva asistencia - ID: ${event.asistenciaId}, '
-        'Aprendiz: ${event.aprendizNombre}, '
-        'Estado: ${event.estadoAsistencia}, '
-        'Ficha: ${event.fichaId}, '
-        'Jornada: ${event.jornada}');
+    debugPrint(
+      '📝 Nueva asistencia - ID: ${event.asistenciaId}, '
+      'Aprendiz: ${event.aprendizNombre}, '
+      'Estado: ${event.estadoAsistencia}, '
+      'Ficha: ${event.fichaId}, '
+      'Jornada: ${event.jornada}',
+    );
 
     // Agregar a la lista de últimas asistencias
     _ultimasAsistenciasWS.insert(0, event);
@@ -328,7 +336,8 @@ class AsistenciaProvider with ChangeNotifier {
   /// Procesa eventos de QR escaneado
   void _procesarQrScanned(WebSocketEvent event) {
     debugPrint(
-        '📱 Procesando QR escaneado: Ficha ${event.fichaId}, Aprendiz ${event.aprendizId}');
+      '📱 Procesando QR escaneado: Ficha ${event.fichaId}, Aprendiz ${event.aprendizId}',
+    );
 
     // Aquí podrías procesar el escaneo del QR
     // Por ejemplo, actualizar estadísticas en tiempo real
@@ -343,10 +352,7 @@ class AsistenciaProvider with ChangeNotifier {
         _setUpdating(true);
 
         // Actualizar datos en paralelo
-        await Future.wait([
-          _cargarEstadisticas(),
-          _cargarAsistencias(),
-        ]);
+        await Future.wait([_cargarEstadisticas(), cargarAsistencias()]);
 
         notifyListeners();
       }

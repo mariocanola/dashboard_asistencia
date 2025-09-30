@@ -85,7 +85,7 @@ class SummaryCards extends StatelessWidget {
         value: value,
         icon: icon,
         color: color,
-        height: isLargeScreen ? 120.h : 110.h,
+        height: isLargeScreen ? 140.h : 130.h,
         borderRadius: BorderRadius.circular(16.r),
       ),
     );
