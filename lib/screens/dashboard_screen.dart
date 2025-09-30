@@ -6,13 +6,10 @@ import 'package:intl/intl.dart';
 import '../providers/asistencia_provider.dart';
 import '../widgets/dashboard_header.dart';
 import '../widgets/summary_cards.dart';
-import '../widgets/asistencia_pie_chart.dart';
-import '../widgets/fichas_bar_chart.dart';
+import '../widgets/realtime_stats_widget.dart';
 import '../widgets/fichas_caracterizacion_list.dart';
 import '../widgets/websocket_status_widget.dart';
 import '../widgets/asistencias_tiempo_real_widget.dart';
-import '../widgets/optimized_asistencias_widget.dart';
-import '../widgets/realtime_asistencias_widget.dart';
 import '../widgets/ultra_fast_asistencias_widget.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -434,160 +431,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         SizedBox(height: basePadding),
 
-                        // Charts section
+                        // Estadísticas en tiempo real
                         Container(
                           constraints: BoxConstraints(maxWidth: maxWidth),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    flex: 1,
-                                    child: Container(
-                                      padding: EdgeInsets.all(24.w),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(
-                                          20.r,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(
-                                              0.08,
-                                            ),
-                                            blurRadius: 20,
-                                            offset: const Offset(0, 8),
-                                          ),
-                                        ],
-                                        border: Border.all(
-                                          color: const Color(0xFFE2E8F0),
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Container(
-                                                padding: EdgeInsets.all(10.w),
-                                                decoration: BoxDecoration(
-                                                  gradient:
-                                                      const LinearGradient(
-                                                    colors: [
-                                                      Color(0xFF3B82F6),
-                                                      Color(0xFF1D4ED8),
-                                                    ],
-                                                  ),
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                    12.r,
-                                                  ),
-                                                ),
-                                                child: Icon(
-                                                  Icons.pie_chart_rounded,
-                                                  color: Colors.white,
-                                                  size: 20.w,
-                                                ),
-                                              ),
-                                              SizedBox(width: 12.w),
-                                              Text(
-                                                'Distribución de Asistencia',
-                                                style: TextStyle(
-                                                  fontSize: baseFontSize * 1.4,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: const Color(
-                                                    0xFF1E293B,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          SizedBox(height: 20.h),
-                                          AsistenciaPieChart(
-                                            estadisticas: estadisticas,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(width: 16.w),
-                                  Expanded(
-                                    flex: 1,
-                                    child: Container(
-                                      padding: EdgeInsets.all(24.w),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(
-                                          20.r,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(
-                                              0.08,
-                                            ),
-                                            blurRadius: 20,
-                                            offset: const Offset(0, 8),
-                                          ),
-                                        ],
-                                        border: Border.all(
-                                          color: const Color(0xFFE2E8F0),
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Container(
-                                                padding: EdgeInsets.all(10.w),
-                                                decoration: BoxDecoration(
-                                                  gradient:
-                                                      const LinearGradient(
-                                                    colors: [
-                                                      Color(0xFF8B5CF6),
-                                                      Color(0xFF7C3AED),
-                                                    ],
-                                                  ),
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                    12.r,
-                                                  ),
-                                                ),
-                                                child: Icon(
-                                                  Icons.bar_chart_rounded,
-                                                  color: Colors.white,
-                                                  size: 20.w,
-                                                ),
-                                              ),
-                                              SizedBox(width: 12.w),
-                                              Text(
-                                                'Asistencia por Ficha',
-                                                style: TextStyle(
-                                                  fontSize: baseFontSize * 1.4,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: const Color(
-                                                    0xFF1E293B,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          SizedBox(height: 20.h),
-                                          FichasBarChart(
-                                            fichas: providerConsumer
-                                                .fichasJornadaActual,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                              const RealtimeStatsWidget(),
                             ],
                           ),
                         ),
