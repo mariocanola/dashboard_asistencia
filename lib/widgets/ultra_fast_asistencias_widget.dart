@@ -287,41 +287,29 @@ class _UltraFastAsistenciasWidgetState extends State<UltraFastAsistenciasWidget>
     );
   }
 
-  /// Widget de resumen ultra-rápido
+  /// Widget de resumen ultra-rápido (optimizado - sin redundancia)
   Widget _buildUltraFastResumen(List<AsistenciaDetalle> asistencias) {
     final enCurso = asistencias.where((a) => a.isEnCurso).length;
     final completas = asistencias.where((a) => a.isCompleta).length;
     final responseTime = _ultraFastService.getResponseTime();
 
     return Container(
-      padding: EdgeInsets.all(20.w),
+      padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF10B981), Color(0xFF059669)],
+          colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
         ),
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF10B981).withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+            color: const Color(0xFF3B82F6).withOpacity(0.2),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Row(
         children: [
-          Expanded(
-            child: _buildStatItem(
-              icon: Icons.group_rounded,
-              label: 'Total Asistencias',
-              value: asistencias.length.toString(),
-            ),
-          ),
-          Container(
-            width: 1,
-            height: 40.h,
-            color: Colors.white.withOpacity(0.3),
-          ),
           Expanded(
             child: _buildStatItem(
               icon: Icons.pending_actions_rounded,

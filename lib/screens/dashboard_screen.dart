@@ -5,11 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../providers/asistencia_provider.dart';
 import '../widgets/dashboard_header.dart';
-import '../widgets/summary_cards.dart';
-import '../widgets/realtime_stats_widget.dart';
-import '../widgets/fichas_caracterizacion_list.dart';
 import '../widgets/websocket_status_widget.dart';
-import '../widgets/asistencias_tiempo_real_widget.dart';
 import '../widgets/ultra_fast_asistencias_widget.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -299,190 +295,180 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         SizedBox(height: basePadding),
 
-                        // Summary cards section
+                        // KPI Principal - Porcentaje de Asistencia (Hero)
                         Container(
                           constraints: BoxConstraints(maxWidth: maxWidth),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    flex: 2,
-                                    child: SummaryCards(
-                                      totalFichas:
-                                          providerConsumer.fichas.length,
-                                      totalPresentes: totalPresentes,
-                                      totalAusentes: totalAusentes,
-                                      porcentajeAsistencia:
-                                          porcentajeAsistencia,
-                                    ),
-                                  ),
-                                  SizedBox(width: 16.w),
-                                  Expanded(
-                                    flex: 1,
-                                    child: Container(
-                                      padding: EdgeInsets.all(20.w),
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                          colors: [
-                                            const Color(0xFF10B981),
-                                            const Color(0xFF059669),
-                                          ],
-                                        ),
-                                        borderRadius: BorderRadius.circular(
-                                          16.r,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: const Color(
-                                              0xFF10B981,
-                                            ).withOpacity(0.3),
-                                            blurRadius: 15,
-                                            offset: const Offset(0, 8),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Container(
-                                                padding: EdgeInsets.all(8.w),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white
-                                                      .withOpacity(0.2),
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                    8.r,
-                                                  ),
-                                                ),
-                                                child: Icon(
-                                                  Icons.trending_up_rounded,
-                                                  color: Colors.white,
-                                                  size: 20.w,
-                                                ),
-                                              ),
-                                              SizedBox(width: 12.w),
-                                              Expanded(
-                                                child: Text(
-                                                  'Asistencia',
-                                                  style: TextStyle(
-                                                    fontSize:
-                                                        baseFontSize * 1.3,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          SizedBox(height: 16.h),
-                                          Row(
-                                            children: [
-                                              Expanded(
-                                                child: Text(
-                                                  '${porcentajeAsistencia}%',
-                                                  style: TextStyle(
-                                                    fontSize:
-                                                        baseFontSize * 2.5,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                              ),
-                                              Container(
-                                                padding: EdgeInsets.symmetric(
-                                                  horizontal: 12.w,
-                                                  vertical: 6.h,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white
-                                                      .withOpacity(0.2),
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                    20.r,
-                                                  ),
-                                                ),
-                                                child: Text(
-                                                  'Excelente',
-                                                  style: TextStyle(
-                                                    fontSize:
-                                                        baseFontSize * 0.9,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                          padding: EdgeInsets.all(24.w),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                const Color(0xFF10B981),
+                                const Color(0xFF059669),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(20.r),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF10B981).withOpacity(0.4),
+                                blurRadius: 20,
+                                offset: const Offset(0, 10),
                               ),
                             ],
                           ),
-                        ),
-                        SizedBox(height: basePadding),
-
-                        // Estadísticas en tiempo real
-                        Container(
-                          constraints: BoxConstraints(maxWidth: maxWidth),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
                             children: [
-                              const RealtimeStatsWidget(),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: basePadding),
-
-                        // Asistencias en tiempo real section
-                        Container(
-                          constraints: BoxConstraints(maxWidth: maxWidth),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: EdgeInsets.all(12.w),
-                                    decoration: BoxDecoration(
-                                      gradient: const LinearGradient(
-                                        colors: [
-                                          Color(0xFF10B981),
-                                          Color(0xFF059669),
-                                        ],
+                              // Icono principal
+                              Container(
+                                padding: EdgeInsets.all(16.w),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(16.r),
+                                ),
+                                child: Icon(
+                                  Icons.trending_up_rounded,
+                                  color: Colors.white,
+                                  size: 32.w,
+                                ),
+                              ),
+                              SizedBox(width: 20.w),
+                              // Información principal
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Asistencia del Día',
+                                      style: TextStyle(
+                                        fontSize: baseFontSize * 1.2,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white.withOpacity(0.9),
                                       ),
-                                      borderRadius: BorderRadius.circular(12.r),
                                     ),
-                                    child: Icon(
-                                      Icons.timeline_rounded,
+                                    SizedBox(height: 8.h),
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          '$porcentajeAsistencia',
+                                          style: TextStyle(
+                                            fontSize: baseFontSize * 4,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                            height: 1,
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: EdgeInsets.only(
+                                            left: 4.w,
+                                            bottom: 8.h,
+                                          ),
+                                          child: Text(
+                                            '%',
+                                            style: TextStyle(
+                                              fontSize: baseFontSize * 2,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Badge de estado
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 16.w,
+                                  vertical: 8.h,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(20.r),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      porcentajeAsistencia >= 90
+                                          ? Icons.sentiment_very_satisfied_rounded
+                                          : porcentajeAsistencia >= 70
+                                              ? Icons.sentiment_satisfied_rounded
+                                              : Icons.sentiment_dissatisfied_rounded,
                                       color: Colors.white,
-                                      size: 24.w,
+                                      size: 20.w,
                                     ),
-                                  ),
-                                  SizedBox(width: 16.w),
-                                  Text(
-                                    'Actividad Reciente',
-                                    style: TextStyle(
-                                      fontSize: baseFontSize * 1.8,
-                                      fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF1E293B),
+                                    SizedBox(width: 8.w),
+                                    Text(
+                                      porcentajeAsistencia >= 90
+                                          ? 'Excelente'
+                                          : porcentajeAsistencia >= 70
+                                              ? 'Bueno'
+                                              : 'Bajo',
+                                      style: TextStyle(
+                                        fontSize: baseFontSize * 1.1,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                              SizedBox(height: 16.h),
-                              const AsistenciasTiempoRealWidget(),
                             ],
                           ),
+                        ),
+                        SizedBox(height: basePadding),
+
+                        // Métricas Complementarias (sin redundancia)
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildMetricCard(
+                                context: context,
+                                title: 'Total Fichas',
+                                value: providerConsumer.fichas.length.toString(),
+                                icon: Icons.assignment_rounded,
+                                color: const Color(0xFF3B82F6),
+                                baseFontSize: baseFontSize,
+                              ),
+                            ),
+                            SizedBox(width: 16.w),
+                            Expanded(
+                              child: _buildMetricCard(
+                                context: context,
+                                title: 'Presentes',
+                                value: totalPresentes.toString(),
+                                icon: Icons.check_circle_rounded,
+                                color: const Color(0xFF10B981),
+                                baseFontSize: baseFontSize,
+                              ),
+                            ),
+                            SizedBox(width: 16.w),
+                            Expanded(
+                              child: _buildMetricCard(
+                                context: context,
+                                title: 'Ausentes',
+                                value: totalAusentes.toString(),
+                                icon: Icons.cancel_rounded,
+                                color: const Color(0xFFEF4444),
+                                baseFontSize: baseFontSize,
+                              ),
+                            ),
+                            SizedBox(width: 16.w),
+                            Expanded(
+                              child: _buildMetricCard(
+                                context: context,
+                                title: 'Jornada',
+                                value: jornadaActual,
+                                icon: Icons.schedule_rounded,
+                                color: const Color(0xFF8B5CF6),
+                                baseFontSize: baseFontSize,
+                                isTextValue: true,
+                              ),
+                            ),
+                          ],
                         ),
                         SizedBox(height: basePadding),
 
@@ -527,108 +513,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ],
                           ),
                         ),
-                        SizedBox(height: basePadding),
-
-                        // Fichas section
-                        Container(
-                          padding: EdgeInsets.symmetric(vertical: 16.h),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: EdgeInsets.all(12.w),
-                                    decoration: BoxDecoration(
-                                      gradient: const LinearGradient(
-                                        colors: [
-                                          Color(0xFFF59E0B),
-                                          Color(0xFFD97706),
-                                        ],
-                                      ),
-                                      borderRadius: BorderRadius.circular(12.r),
-                                    ),
-                                    child: Icon(
-                                      Icons.assignment_rounded,
-                                      color: Colors.white,
-                                      size: 24.w,
-                                    ),
-                                  ),
-                                  SizedBox(width: 16.w),
-                                  Text(
-                                    'Fichas de caracterización',
-                                    style: TextStyle(
-                                      fontSize: baseFontSize * 1.8,
-                                      fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF1E293B),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 16.h),
-                              Container(
-                                constraints: BoxConstraints(maxWidth: maxWidth),
-                                padding: EdgeInsets.all(20.w),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16.r),
-                                  border: Border.all(
-                                    color: const Color(0xFFE2E8F0),
-                                    width: 1,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.05,
-                                      ),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding: EdgeInsets.all(8.w),
-                                          decoration: BoxDecoration(
-                                            gradient: const LinearGradient(
-                                              colors: [
-                                                Color(0xFFF59E0B),
-                                                Color(0xFFD97706),
-                                              ],
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              8.r,
-                                            ),
-                                          ),
-                                          child: Icon(
-                                            Icons.school_rounded,
-                                            color: Colors.white,
-                                            size: 16.w,
-                                          ),
-                                        ),
-                                        SizedBox(width: 12.w),
-                                        Text(
-                                          'Fichas en Formación',
-                                          style: TextStyle(
-                                            fontSize: baseFontSize * 1.2,
-                                            fontWeight: FontWeight.w600,
-                                            color: const Color(0xFF1E293B),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    SizedBox(height: 16.h),
-                                    const FichasCaracterizacionList(),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -670,5 +554,75 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final month = months[date.month - 1];
     final year = date.year;
     return '$weekday, $day de $month de $year';
+  }
+
+  /// Construye una tarjeta de métrica compacta y clara
+  Widget _buildMetricCard({
+    required BuildContext context,
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+    required double baseFontSize,
+    bool isTextValue = false,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(
+          color: color.withOpacity(0.2),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Icono
+          Container(
+            padding: EdgeInsets.all(10.w),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 24.w,
+            ),
+          ),
+          SizedBox(height: 12.h),
+          // Valor
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: isTextValue ? baseFontSize * 1.3 : baseFontSize * 2.2,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF1E293B),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          SizedBox(height: 4.h),
+          // Título
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: baseFontSize * 0.9,
+              color: const Color(0xFF64748B),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
