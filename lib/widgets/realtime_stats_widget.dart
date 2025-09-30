@@ -16,8 +16,8 @@ class RealtimeStatsWidget extends StatelessWidget {
       builder: (context, provider, _) {
         final asistencias = provider.asistenciasDetalle;
         
-        // Calcular estadísticas en tiempo real
-        final stats = _calculateStats(asistencias);
+        // Calcular estadísticas en tiempo real usando datos correctos de la jornada
+        final stats = _calculateStats(asistencias, provider);
         
         return Container(
           padding: EdgeInsets.all(20.w),
@@ -191,19 +191,38 @@ class RealtimeStatsWidget extends StatelessWidget {
     );
   }
 
-  /// Calcula las estadísticas en tiempo real
-  Map<String, dynamic> _calculateStats(List<AsistenciaDetalle> asistencias) {
-    final total = asistencias.length;
-    final presentes = asistencias.where((a) => a.estado == 'PRESENTE').length;
-    final ausentes = total - presentes;
-    final porcentaje = total > 0 ? (presentes / total * 100) : 0;
+  /// Calcula las estadísticas en tiempo real usando datos correctos de la jornada
+  Map<String, dynamic> _calculateStats(List<AsistenciaDetalle> asistencias, AsistenciaProvider provider) {
+    // Obtener estadísticas reales de la jornada
+    final estadisticasJornada = provider.estadisticas[provider.jornadaActual];
     
-    return {
-      'total': total,
-      'presentes': presentes,
-      'ausentes': ausentes,
-      'porcentaje': porcentaje,
-    };
+    if (estadisticasJornada != null) {
+      // Usar datos correctos de la jornada
+      final total = estadisticasJornada.totalAprendices; // 28 aprendices
+      final presentes = estadisticasJornada.totalPresentes; // 11 presentes
+      final ausentes = total - presentes; // 28 - 11 = 17 ausentes
+      final porcentaje = total > 0 ? (presentes / total * 100) : 0;
+      
+      return {
+        'total': total,
+        'presentes': presentes,
+        'ausentes': ausentes,
+        'porcentaje': porcentaje,
+      };
+    } else {
+      // Fallback: calcular basado en asistencias registradas
+      final total = asistencias.length;
+      final presentes = asistencias.where((a) => a.estado == 'PRESENTE').length;
+      final ausentes = total - presentes;
+      final porcentaje = total > 0 ? (presentes / total * 100) : 0;
+      
+      return {
+        'total': total,
+        'presentes': presentes,
+        'ausentes': ausentes,
+        'porcentaje': porcentaje,
+      };
+    }
   }
 
   /// Construye una tarjeta de estadística
