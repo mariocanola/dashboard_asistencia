@@ -7,9 +7,7 @@ import '../providers/asistencia_provider.dart';
 import '../widgets/dashboard_header.dart';
 import '../widgets/summary_cards.dart';
 import '../widgets/realtime_stats_widget.dart';
-import '../widgets/fichas_caracterizacion_list.dart';
 import '../widgets/websocket_status_widget.dart';
-import '../widgets/asistencias_tiempo_real_widget.dart';
 import '../widgets/ultra_fast_asistencias_widget.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -443,49 +441,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         SizedBox(height: basePadding),
 
-                        // Asistencias en tiempo real section
-                        Container(
-                          constraints: BoxConstraints(maxWidth: maxWidth),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: EdgeInsets.all(12.w),
-                                    decoration: BoxDecoration(
-                                      gradient: const LinearGradient(
-                                        colors: [
-                                          Color(0xFF10B981),
-                                          Color(0xFF059669),
-                                        ],
-                                      ),
-                                      borderRadius: BorderRadius.circular(12.r),
-                                    ),
-                                    child: Icon(
-                                      Icons.timeline_rounded,
-                                      color: Colors.white,
-                                      size: 24.w,
-                                    ),
-                                  ),
-                                  SizedBox(width: 16.w),
-                                  Text(
-                                    'Actividad Reciente',
-                                    style: TextStyle(
-                                      fontSize: baseFontSize * 1.8,
-                                      fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF1E293B),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 16.h),
-                              const AsistenciasTiempoRealWidget(),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: basePadding),
-
                         // Asistencias del día por jornada
                         Container(
                           constraints: BoxConstraints(maxWidth: maxWidth),
@@ -524,108 +479,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                               SizedBox(height: 16.h),
                               const UltraFastAsistenciasWidget(),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: basePadding),
-
-                        // Fichas section
-                        Container(
-                          padding: EdgeInsets.symmetric(vertical: 16.h),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: EdgeInsets.all(12.w),
-                                    decoration: BoxDecoration(
-                                      gradient: const LinearGradient(
-                                        colors: [
-                                          Color(0xFFF59E0B),
-                                          Color(0xFFD97706),
-                                        ],
-                                      ),
-                                      borderRadius: BorderRadius.circular(12.r),
-                                    ),
-                                    child: Icon(
-                                      Icons.assignment_rounded,
-                                      color: Colors.white,
-                                      size: 24.w,
-                                    ),
-                                  ),
-                                  SizedBox(width: 16.w),
-                                  Text(
-                                    'Fichas de caracterización',
-                                    style: TextStyle(
-                                      fontSize: baseFontSize * 1.8,
-                                      fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF1E293B),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 16.h),
-                              Container(
-                                constraints: BoxConstraints(maxWidth: maxWidth),
-                                padding: EdgeInsets.all(20.w),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16.r),
-                                  border: Border.all(
-                                    color: const Color(0xFFE2E8F0),
-                                    width: 1,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.05,
-                                      ),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding: EdgeInsets.all(8.w),
-                                          decoration: BoxDecoration(
-                                            gradient: const LinearGradient(
-                                              colors: [
-                                                Color(0xFFF59E0B),
-                                                Color(0xFFD97706),
-                                              ],
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              8.r,
-                                            ),
-                                          ),
-                                          child: Icon(
-                                            Icons.school_rounded,
-                                            color: Colors.white,
-                                            size: 16.w,
-                                          ),
-                                        ),
-                                        SizedBox(width: 12.w),
-                                        Text(
-                                          'Fichas en Formación',
-                                          style: TextStyle(
-                                            fontSize: baseFontSize * 1.2,
-                                            fontWeight: FontWeight.w600,
-                                            color: const Color(0xFF1E293B),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    SizedBox(height: 16.h),
-                                    const FichasCaracterizacionList(),
-                                  ],
-                                ),
-                              ),
                             ],
                           ),
                         ),
