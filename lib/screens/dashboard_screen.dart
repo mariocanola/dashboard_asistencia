@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 
 import '../providers/asistencia_provider.dart';
 import '../widgets/dashboard_header.dart';
-import '../widgets/realtime_stats_widget.dart';
 import '../widgets/websocket_status_widget.dart';
 import '../widgets/ultra_fast_asistencias_widget.dart';
 
@@ -318,7 +317,107 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                             ],
                           ),
-                          child: const RealtimeStatsWidget(),
+                          child: Row(
+                            children: [
+                              // Icono principal
+                              Container(
+                                padding: EdgeInsets.all(16.w),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(16.r),
+                                ),
+                                child: Icon(
+                                  Icons.trending_up_rounded,
+                                  color: Colors.white,
+                                  size: 32.w,
+                                ),
+                              ),
+                              SizedBox(width: 20.w),
+                              // Información principal
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Asistencia del Día',
+                                      style: TextStyle(
+                                        fontSize: baseFontSize * 1.2,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white.withOpacity(0.9),
+                                      ),
+                                    ),
+                                    SizedBox(height: 8.h),
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          '$porcentajeAsistencia',
+                                          style: TextStyle(
+                                            fontSize: baseFontSize * 4,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                            height: 1,
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: EdgeInsets.only(
+                                            left: 4.w,
+                                            bottom: 8.h,
+                                          ),
+                                          child: Text(
+                                            '%',
+                                            style: TextStyle(
+                                              fontSize: baseFontSize * 2,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Badge de estado
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 16.w,
+                                  vertical: 8.h,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(20.r),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      porcentajeAsistencia >= 90
+                                          ? Icons.sentiment_very_satisfied_rounded
+                                          : porcentajeAsistencia >= 70
+                                              ? Icons.sentiment_satisfied_rounded
+                                              : Icons.sentiment_dissatisfied_rounded,
+                                      color: Colors.white,
+                                      size: 20.w,
+                                    ),
+                                    SizedBox(width: 8.w),
+                                    Text(
+                                      porcentajeAsistencia >= 90
+                                          ? 'Excelente'
+                                          : porcentajeAsistencia >= 70
+                                              ? 'Bueno'
+                                              : 'Bajo',
+                                      style: TextStyle(
+                                        fontSize: baseFontSize * 1.1,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         SizedBox(height: basePadding),
 
@@ -329,8 +428,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               child: _buildMetricCard(
                                 context: context,
                                 title: 'Total Fichas',
-                                value:
-                                    providerConsumer.fichas.length.toString(),
+                                value: providerConsumer.fichas.length.toString(),
                                 icon: Icons.assignment_rounded,
                                 color: const Color(0xFF3B82F6),
                                 baseFontSize: baseFontSize,
