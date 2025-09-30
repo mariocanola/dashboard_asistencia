@@ -13,6 +13,7 @@ import '../widgets/websocket_status_widget.dart';
 import '../widgets/asistencias_tiempo_real_widget.dart';
 import '../widgets/optimized_asistencias_widget.dart';
 import '../widgets/realtime_asistencias_widget.dart';
+import '../widgets/ultra_fast_asistencias_widget.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -672,7 +673,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ],
                               ),
                               SizedBox(height: 16.h),
-                              const RealtimeAsistenciasWidget(),
+                              const UltraFastAsistenciasWidget(),
                             ],
                           ),
                         ),
