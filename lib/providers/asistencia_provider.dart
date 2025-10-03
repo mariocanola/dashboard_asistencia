@@ -10,6 +10,7 @@ import '../models/ficha_model.dart';
 import '../models/websocket_event.dart';
 import '../services/api_service.dart';
 import '../services/websocket_pusher_service.dart';
+import '../services/test_endpoint_service.dart';
 import '../utils/websocket_constants.dart';
 
 class AsistenciaProvider with ChangeNotifier {
@@ -188,6 +189,10 @@ class AsistenciaProvider with ChangeNotifier {
   /// Obtiene todas las jornadas del día actual
   Future<void> cargarAsistencias() async {
     try {
+      // Prueba del endpoint antes de la llamada real
+      debugPrint('🧪 Ejecutando prueba del endpoint...');
+      await TestEndpointService.testAsistenciasEndpoint();
+      
       // Obtener TODAS las asistencias del día actual (sin filtrar por jornada)
       // El backend devolverá todas las jornadas agrupadas en "por_jornada"
       final response = await _apiService.getAsistenciasPorJornada(
@@ -200,11 +205,21 @@ class AsistenciaProvider with ChangeNotifier {
       _asistenciasDetalle = response.asistencias;
 
       debugPrint('✅ Asistencias cargadas: ${_asistenciasDetalle.length}');
+      debugPrint('📊 Total asistencias del response: ${response.totalAsistencias}');
       debugPrint('📊 Jornadas: ${response.porJornada.keys.toList()}');
+      
+      // Debug detallado de cada asistencia
+      for (int i = 0; i < _asistenciasDetalle.length; i++) {
+        final asistencia = _asistenciasDetalle[i];
+        debugPrint('   Asistencia $i: ${asistencia.aprendiz} - Ficha: ${asistencia.ficha} - Estado: ${asistencia.estado}');
+      }
 
       // Mostrar detalle por jornada
       response.porJornada.forEach((jornada, asistencias) {
         debugPrint('   - $jornada: ${asistencias.length} asistencias');
+        for (var asistencia in asistencias) {
+          debugPrint('     * ${asistencia.aprendiz} - Ficha: ${asistencia.ficha}');
+        }
       });
     } catch (e) {
       debugPrint('❌ Error al cargar asistencias: $e');

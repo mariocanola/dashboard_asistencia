@@ -28,7 +28,7 @@ class UltraFastAsistenciasService {
   DateTime? _lastUpdate;
   int _lastCount = 0;
 
-  // Configuración ultra-rápida optimizada para máximo 2 segundos
+  // Configuración ultra-rápida optimizada para máximo 3 segundos
   static const Duration _fastPollingInterval =
       Duration(seconds: 1); // Reducido a 1s
   static const Duration _webSocketTimeout =
@@ -37,6 +37,8 @@ class UltraFastAsistenciasService {
       Duration(milliseconds: 200); // Batch updates más rápido
   static const Duration _healthCheckInterval =
       Duration(seconds: 30); // Health check cada 30s
+  static const Duration _statsUpdateTimeout =
+      Duration(seconds: 3); // Timeout específico para estadísticas
   // static const int _maxBatchSize = 50; // Procesar máximo 50 cambios por vez
 
   /// Inicializa el servicio ultra-rápido
@@ -53,7 +55,7 @@ class UltraFastAsistenciasService {
     _startUltraFastPolling(provider);
 
     debugPrint(
-        '✅ UltraFastAsistenciasService inicializado - Máximo 2s de delay');
+        '✅ UltraFastAsistenciasService inicializado - Máximo 3s de delay');
   }
 
   /// Inicializa el cache con datos actuales
@@ -176,14 +178,14 @@ class UltraFastAsistenciasService {
     debugPrint('⏹️ Polling detenido - WebSocket activo');
   }
 
-  /// Actualización ultra-rápida optimizada para máximo 2 segundos
+  /// Actualización ultra-rápida optimizada para máximo 3 segundos
   Future<void> _fastUpdate(AsistenciaProvider provider) async {
     try {
       final startTime = DateTime.now();
 
-      // Actualización paralela de datos con timeout
+      // Actualización paralela de datos con timeout específico para estadísticas
       await provider.cargarAsistencias().timeout(
-        const Duration(seconds: 2),
+        _statsUpdateTimeout,
         onTimeout: () {
           debugPrint('⏰ Timeout en carga de asistencias - usando cache');
         },

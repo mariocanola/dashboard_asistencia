@@ -53,8 +53,11 @@ class ApiService {
       final Map<String, dynamic> data = _decodeResponse(response);
 
       debugPrint('✅ Asistencias obtenidas: ${data['total_asistencias'] ?? 0}');
-      debugPrint(
-          '📊 Jornadas encontradas: ${(data['por_jornada'] as Map?)?.keys.toList() ?? []}');
+      debugPrint('📊 Total asistencias en lista: ${(data['asistencias'] as List?)?.length ?? 0}');
+      debugPrint('📊 Jornadas encontradas: ${(data['por_jornada'] as Map?)?.keys.toList() ?? []}');
+      
+      // Debug detallado del JSON recibido
+      debugPrint('🔍 JSON completo recibido: ${jsonEncode(data)}');
 
       return AsistenciaJornadaResponse.fromJson(data);
     } catch (e) {
@@ -143,11 +146,11 @@ class ApiService {
     try {
       final response = await httpClient
           .get(url, headers: _headers())
-          .timeout(const Duration(seconds: 15)); // Reducido de 30 a 15 segundos
+          .timeout(const Duration(seconds: 10)); // Timeout más razonable para el servidor
       _checkStatusCode(response);
       return response;
     } on TimeoutException {
-      throw Exception('Timeout: La petición tardó demasiado (15s)');
+      throw Exception('Timeout: La petición tardó demasiado (10s)');
     } on http.ClientException {
       throw Exception('Error de conexión: No se pudo conectar al servidor');
     } catch (e) {

@@ -9,6 +9,7 @@ import '../models/ficha_estadisticas_model.dart';
 import '../providers/asistencia_provider.dart';
 import '../services/ultra_fast_asistencias_service.dart';
 import '../utils/constants.dart';
+import 'estadisticas_generales_widget.dart';
 
 /// Widget ultra-optimizado para manejar miles de asistencias en tiempo real
 /// Máximo 5 segundos de actualización, optimizado para alta carga
@@ -275,8 +276,8 @@ class _UltraFastAsistenciasWidgetState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Resumen general ultra-rápido
-        _buildUltraFastResumen(asistencias),
+        // Resumen general ultra-rápido (optimizado para máximo 3s)
+        const EstadisticasGeneralesWidget(),
         SizedBox(height: 16.h),
 
         // Indicador de estado ultra-rápido (oculto)
@@ -306,128 +307,6 @@ class _UltraFastAsistenciasWidgetState
     );
   }
 
-  /// Widget de resumen ultra-rápido (optimizado - sin redundancia)
-  Widget _buildUltraFastResumen(List<AsistenciaDetalle> asistencias) {
-    // Agrupar por ficha para contar fichas en lugar de aprendices
-    final Map<String, List<AsistenciaDetalle>> porFicha = {};
-    for (var asistencia in asistencias) {
-      porFicha.putIfAbsent(asistencia.ficha, () => []).add(asistencia);
-    }
-
-    final totalFichas = porFicha.length;
-
-    // Contar fichas con asistencias en curso y completas
-    int fichasEnCurso = 0;
-    int fichasCompletas = 0;
-
-    for (var fichaAsistencias in porFicha.values) {
-      final tieneEnCurso = fichaAsistencias.any((a) => a.isEnCurso);
-      final tieneCompletas = fichaAsistencias.any((a) => a.isCompleta);
-
-      if (tieneEnCurso) fichasEnCurso++;
-      if (tieneCompletas) fichasCompletas++;
-    }
-
-    final responseTime = _ultraFastService.getResponseTime();
-
-    return Container(
-      padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-        ),
-        borderRadius: BorderRadius.circular(16.r),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF3B82F6).withOpacity(0.2),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildStatItem(
-              icon: Icons.badge_rounded,
-              label: 'Total Fichas',
-              value: totalFichas.toString(),
-            ),
-          ),
-          Container(
-            width: 1,
-            height: 40.h,
-            color: Colors.white.withOpacity(0.3),
-          ),
-          Expanded(
-            child: _buildStatItem(
-              icon: Icons.pending_actions_rounded,
-              label: 'Con En Curso',
-              value: fichasEnCurso.toString(),
-            ),
-          ),
-          Container(
-            width: 1,
-            height: 40.h,
-            color: Colors.white.withOpacity(0.3),
-          ),
-          Expanded(
-            child: _buildStatItem(
-              icon: Icons.check_circle_rounded,
-              label: 'Con Completas',
-              value: fichasCompletas.toString(),
-            ),
-          ),
-          Container(
-            width: 1,
-            height: 40.h,
-            color: Colors.white.withOpacity(0.3),
-          ),
-          Expanded(
-            child: _buildStatItem(
-              icon: Icons.speed_rounded,
-              label: 'Tiempo Respuesta',
-              value: responseTime,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Column(
-      children: [
-        Icon(
-          icon,
-          color: Colors.white,
-          size: 20.w,
-        ),
-        SizedBox(height: 8.h),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 18.sp,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        SizedBox(height: 4.h),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10.sp,
-            color: Colors.white.withOpacity(0.9),
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
 
   /// Widget de indicador de estado ultra-rápido
   Widget _buildUltraFastStatusIndicator() {

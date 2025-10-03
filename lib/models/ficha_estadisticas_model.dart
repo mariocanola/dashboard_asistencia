@@ -25,9 +25,16 @@ class FichaEstadisticas {
     required String ficha,
     required List<dynamic> asistencias,
   }) {
-    final totalAprendices = asistencias.length;
-    final asistenciasEnCurso = asistencias.where((a) => a.isEnCurso).length;
-    final asistenciasCompletas = asistencias.where((a) => a.isCompleta).length;
+    // Contar aprendices únicos, no registros de asistencia
+    final aprendicesUnicos = asistencias.map((a) => a.aprendiz).toSet().length;
+    final totalAprendices = aprendicesUnicos;
+    
+    // Contar aprendices únicos en curso y completos
+    final aprendicesEnCurso = asistencias.where((a) => a.isEnCurso).map((a) => a.aprendiz).toSet().length;
+    final aprendicesCompletos = asistencias.where((a) => a.isCompleta).map((a) => a.aprendiz).toSet().length;
+    
+    final asistenciasEnCurso = aprendicesEnCurso;
+    final asistenciasCompletas = aprendicesCompletos;
     
     // Por ahora, simular porcentaje de variación (en el futuro vendrá del backend)
     final porcentajeVariacion = _calcularPorcentajeVariacion(asistenciasEnCurso, totalAprendices);
