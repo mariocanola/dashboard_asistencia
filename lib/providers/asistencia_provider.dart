@@ -26,7 +26,7 @@ class AsistenciaProvider with ChangeNotifier {
   Map<String, EstadisticasJornada> _estadisticas = {};
   List<Asistencia> _asistencias = [];
   List<AsistenciaDetalle> _asistenciasDetalle = [];
-  List<FichaModel> _fichas = [];
+  List<Map<String, dynamic>> _fichas = [];
   String _jornadaActual = '';
   Timer? _refreshTimer;
 
@@ -46,7 +46,7 @@ class AsistenciaProvider with ChangeNotifier {
   Map<String, EstadisticasJornada> get estadisticas => _estadisticas;
   List<Asistencia> get asistencias => _asistencias;
   List<AsistenciaDetalle> get asistenciasDetalle => _asistenciasDetalle;
-  List<FichaModel> get fichas => _fichas;
+  List<Map<String, dynamic>> get fichas => _fichas;
   String get jornadaActual => _jornadaActual;
   ApiService get apiService => _apiService;
   dynamic get webSocketService => _webSocketService;
@@ -59,21 +59,41 @@ class AsistenciaProvider with ChangeNotifier {
       List.unmodifiable(_ultimasAsistenciasWS);
 
   /// Devuelve las fichas de la jornada actual
-  List<FichaModel> get fichasJornadaActual {
+  List<Map<String, dynamic>> get fichasJornadaActual {
     if (_jornadaActual.isEmpty) return [];
-    return _fichas
-        .where(
-          (f) =>
-              _normalizar(f.jornadaFormacion.jornada) ==
-              _normalizar(_jornadaActual),
-        )
-        .toList();
+
+    // Obtener el ID de jornada actual (1=MAÑANA, 2=TARDE, 3=NOCHE)
+    final hora = DateTime.now().hour;
+    final jornadaIdActual = hora >= 6 && hora < 12
+        ? 1
+        : hora >= 12 && hora < 18
+            ? 2
+            : hora >= 18 && hora < 22
+                ? 3
+                : 0;
+
+    debugPrint(
+        '🔍 Filtrando fichas para jornada ID: $jornadaIdActual (${_jornadaActual})');
+
+    final fichasFiltradas = _fichas.where((f) {
+      final fichaJornadaId = f['jornada_id'] ?? 0;
+      return fichaJornadaId == jornadaIdActual;
+    }).toList();
+
+    debugPrint(
+        '✅ Fichas encontradas para jornada $jornadaIdActual: ${fichasFiltradas.length}');
+    for (var ficha in fichasFiltradas) {
+      debugPrint(
+          '   - Ficha ${ficha['ficha']} (ID: ${ficha['id']}, Jornada: ${ficha['jornada_id']})');
+    }
+
+    return fichasFiltradas;
   }
 
   /// Devuelve las asistencias de las fichas de la jornada actual
   List<Asistencia> get asistenciasJornadaActual {
     final fichasIds =
-        fichasJornadaActual.map((f) => f.numeroFicha.toString()).toSet();
+        fichasJornadaActual.map((f) => f['ficha'].toString()).toSet();
     final jornadaActualNorm = _normalizar(_jornadaActual);
     return _asistencias
         .where(
@@ -133,38 +153,6 @@ class AsistenciaProvider with ChangeNotifier {
   }
   */
 
-  /// Actualiza los datos principales
-  Future<void> _actualizarDatos() async {
-    _setUpdating(true);
-    try {
-      final nuevaJornada = JornadaConstants.getJornadaActual();
-      final nuevaJornadaString = JornadaConstants.getJornadaString(
-        nuevaJornada,
-      );
-
-      // Actualizar jornada si cambió
-      if (nuevaJornadaString != _jornadaActual) {
-        _jornadaActual = nuevaJornadaString;
-      }
-
-      // Cargar datos en paralelo para mejor rendimiento
-      await Future.wait([
-        _cargarEstadisticas(),
-        _cargarFichas(),
-        cargarAsistencias(),
-      ]);
-
-      // Notificar a los listeners siempre, incluso si hay errores parciales
-      notifyListeners();
-    } catch (e) {
-      debugPrint('Error al actualizar datos: $e');
-      // Notificar incluso con errores para que la UI pueda mostrar el estado
-      notifyListeners();
-    } finally {
-      _setUpdating(false);
-    }
-  }
-
   /// Carga estadísticas desde el API
   Future<void> _cargarEstadisticas() async {
     try {
@@ -192,33 +180,38 @@ class AsistenciaProvider with ChangeNotifier {
       // Prueba del endpoint antes de la llamada real
       debugPrint('🧪 Ejecutando prueba del endpoint...');
       await TestEndpointService.testAsistenciasEndpoint();
-      
+
       // Obtener TODAS las asistencias del día actual (sin filtrar por jornada)
       // El backend devolverá todas las jornadas agrupadas en "por_jornada"
-      final response = await _apiService.getAsistenciasPorJornada(
-        // No enviar jornadaId para obtener todas las jornadas
-        jornadaId: null,
-        // Usar fecha actual automáticamente
-        fecha: DateTime.now(),
-      ).timeout(const Duration(seconds: 2));
+      final response = await _apiService
+          .getAsistenciasPorJornada(
+            // No enviar jornadaId para obtener todas las jornadas
+            jornadaId: null,
+            // Usar fecha actual automáticamente
+            fecha: DateTime.now(),
+          )
+          .timeout(const Duration(seconds: 2));
 
       _asistenciasDetalle = response.asistencias;
 
       debugPrint('✅ Asistencias cargadas: ${_asistenciasDetalle.length}');
-      debugPrint('📊 Total asistencias del response: ${response.totalAsistencias}');
+      debugPrint(
+          '📊 Total asistencias del response: ${response.totalAsistencias}');
       debugPrint('📊 Jornadas: ${response.porJornada.keys.toList()}');
-      
+
       // Debug detallado de cada asistencia
       for (int i = 0; i < _asistenciasDetalle.length; i++) {
         final asistencia = _asistenciasDetalle[i];
-        debugPrint('   Asistencia $i: ${asistencia.aprendiz} - Ficha: ${asistencia.ficha} - Estado: ${asistencia.estado}');
+        debugPrint(
+            '   Asistencia $i: ${asistencia.aprendiz} - Ficha: ${asistencia.ficha} - Estado: ${asistencia.estado}');
       }
 
       // Mostrar detalle por jornada
       response.porJornada.forEach((jornada, asistencias) {
         debugPrint('   - $jornada: ${asistencias.length} asistencias');
         for (var asistencia in asistencias) {
-          debugPrint('     * ${asistencia.aprendiz} - Ficha: ${asistencia.ficha}');
+          debugPrint(
+              '     * ${asistencia.aprendiz} - Ficha: ${asistencia.ficha}');
         }
       });
     } catch (e) {
@@ -310,26 +303,28 @@ class AsistenciaProvider with ChangeNotifier {
     }
   }
 
-  /// Maneja eventos recibidos del WebSocket
+  /// Maneja eventos recibidos del WebSocket (optimizado para respuesta inmediata)
   void _manejarEventoWebSocket(WebSocketEvent event) {
     try {
+      debugPrint('📨 Procesando evento WebSocket: ${event.event}');
+
       if (event.isNuevaAsistencia) {
         _procesarNuevaAsistencia(event);
       } else if (event.isQrScanned) {
         _procesarQrScanned(event);
       }
 
-      // Notificar a los listeners sobre el cambio
-      notifyListeners();
+      // Los métodos individuales ya manejan notifyListeners()
+      // No es necesario llamarlo aquí para evitar duplicaciones
     } catch (e) {
       debugPrint('❌ Error al procesar evento WebSocket: $e');
     }
   }
 
-  /// Procesa eventos de nueva asistencia registrada
+  /// Procesa eventos de nueva asistencia registrada (optimizado para respuesta inmediata)
   void _procesarNuevaAsistencia(WebSocketEvent event) {
     debugPrint(
-      '📝 Nueva asistencia - ID: ${event.asistenciaId}, '
+      '📝 Nueva asistencia recibida - ID: ${event.asistenciaId}, '
       'Aprendiz: ${event.aprendizNombre}, '
       'Estado: ${event.estadoAsistencia}, '
       'Ficha: ${event.fichaId}, '
@@ -344,7 +339,10 @@ class AsistenciaProvider with ChangeNotifier {
       _ultimasAsistenciasWS.removeRange(10, _ultimasAsistenciasWS.length);
     }
 
-    // Actualizar datos desde el API para tener la información completa
+    // Notificar inmediatamente para actualización visual instantánea
+    notifyListeners();
+
+    // Actualizar datos desde el API para tener la información completa (en background)
     _actualizarDatosDesdeWebSocket();
   }
 
@@ -359,25 +357,45 @@ class AsistenciaProvider with ChangeNotifier {
     _actualizarDatosDesdeWebSocket();
   }
 
-  /// Actualiza los datos cuando se recibe un evento WebSocket (optimizado para máximo 2s)
+  /// Actualiza los datos cuando se recibe un evento WebSocket (optimizado para máximo 1s)
   Future<void> _actualizarDatosDesdeWebSocket() async {
     try {
       // Solo actualizar si no estamos en proceso de carga
       if (!_isLoading && !_isUpdating) {
         _setUpdating(true);
 
-        // Actualizar datos en paralelo con timeout de 2 segundos
-        await Future.wait([
-          _cargarEstadisticas().timeout(const Duration(seconds: 2)),
-          cargarAsistencias().timeout(const Duration(seconds: 2)),
-        ]).timeout(const Duration(seconds: 2));
+        debugPrint('🔄 Actualizando datos desde WebSocket...');
 
+        // Actualizar datos en paralelo con timeout reducido a 1 segundo
+        await Future.wait([
+          _cargarEstadisticas().timeout(const Duration(seconds: 1)),
+          cargarAsistencias().timeout(const Duration(seconds: 1)),
+        ]).timeout(const Duration(seconds: 1));
+
+        debugPrint('✅ Datos actualizados desde WebSocket exitosamente');
         notifyListeners();
       }
     } catch (e) {
       debugPrint('❌ Error al actualizar datos desde WebSocket: $e');
+      // Intentar actualización de respaldo más rápida
+      await _actualizacionRapidaRespaldo();
     } finally {
       _setUpdating(false);
+    }
+  }
+
+  /// Actualización rápida de respaldo cuando falla la principal
+  Future<void> _actualizacionRapidaRespaldo() async {
+    try {
+      debugPrint('🔄 Ejecutando actualización rápida de respaldo...');
+
+      // Solo cargar asistencias (más crítico) con timeout muy corto
+      await cargarAsistencias().timeout(const Duration(milliseconds: 500));
+
+      debugPrint('✅ Actualización rápida de respaldo completada');
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ Error en actualización rápida de respaldo: $e');
     }
   }
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../providers/asistencia_provider.dart';
+import '../providers/hybrid_asistencia_provider.dart';
 
 /// Widget optimizado para mostrar las tarjetas de métricas
 /// Solo se reconstruye cuando cambian los datos específicos de las métricas
@@ -18,7 +18,7 @@ class MetricsCardsWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AsistenciaProvider>(
+    return Consumer<HybridAsistenciaProvider>(
       builder: (context, provider, _) {
         // Calcular métricas basadas en datos reales disponibles
         final asistenciasDetalle = provider.asistenciasDetalle;
@@ -30,36 +30,33 @@ class MetricsCardsWidget extends StatelessWidget {
         final fichasUnicas = asistenciasDetalle.map((a) => a.ficha).toSet();
         final totalFichas = fichasUnicas.length;
         
-        // Calcular aprendices únicos por ficha desde asistenciasDetalle
-        final Map<String, Set<String>> aprendicesPorFicha = {};
-        for (var asistencia in asistenciasDetalle) {
-          aprendicesPorFicha.putIfAbsent(asistencia.ficha, () => <String>{}).add(asistencia.numeroDocumento);
-        }
+        // Calcular aprendices únicos totales desde asistenciasDetalle (datos reales del endpoint)
+        final aprendicesUnicos = asistenciasDetalle.map((a) => a.aprendiz).toSet();
+        final totalAprendicesEsperados = aprendicesUnicos.length;
         
-        // Calcular totales
-        int totalAprendicesEsperados = 0;
-        int totalPresentes = 0;
+        // Calcular presentes basado en estados reales del endpoint
+        final presentesUnicos = asistenciasDetalle
+            .where((a) => a.estado == 'en_curso' || a.estado == 'completa')
+            .map((a) => a.aprendiz)
+            .toSet();
+        final totalPresentes = presentesUnicos.length;
         
-        // Para cada ficha única, calcular aprendices esperados y presentes
-        for (var fichaStr in fichasUnicas) {
-          final aprendicesEnFicha = aprendicesPorFicha[fichaStr]?.length ?? 0;
-          
-          // Asumir que cada ficha tiene un número esperado de aprendices
-          // En el futuro esto debería venir del modelo FichaModel
-          final aprendicesEsperadosPorFicha = 20; // Valor por defecto
-          
-          totalAprendicesEsperados += aprendicesEsperadosPorFicha;
-          totalPresentes += aprendicesEnFicha;
-        }
-        
-        // Calcular ausentes como diferencia
-        final totalAusentes = totalAprendicesEsperados - totalPresentes;
+        // Calcular ausentes basado en estados reales del endpoint
+        final ausentesUnicos = asistenciasDetalle
+            .where((a) => a.estado == 'ausente' || a.estado == 'falta')
+            .map((a) => a.aprendiz)
+            .toSet();
+        final totalAusentes = ausentesUnicos.length;
         
         // Calcular porcentaje de asistencia
         final porcentajeAsistencia = totalAprendicesEsperados > 0
             ? (totalPresentes / totalAprendicesEsperados * 100).round()
             : 0;
 
+        // Debug detallado de estados
+        final estadosUnicos = asistenciasDetalle.map((a) => a.estado).toSet();
+        debugPrint('🔍 Estados únicos encontrados: $estadosUnicos');
+        
         debugPrint(
           '🔄 MetricsCards - Total fichas: $totalFichas, Esperados: $totalAprendicesEsperados, Presentes: $totalPresentes, Ausentes: $totalAusentes, %: $porcentajeAsistencia%',
         );

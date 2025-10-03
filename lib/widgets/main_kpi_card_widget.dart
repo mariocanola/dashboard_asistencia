@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 
-import '../providers/asistencia_provider.dart';
+import '../providers/hybrid_asistencia_provider.dart';
 
-/// Widget optimizado para mostrar el KPI principal de asistencia
-/// Solo se reconstruye cuando cambian los datos de asistencia
+/// Widget para mostrar el KPI principal de asistencia
 class MainKPICardWidget extends StatelessWidget {
   final double baseFontSize;
-
+  
   const MainKPICardWidget({
     super.key,
     required this.baseFontSize,
@@ -16,136 +15,107 @@ class MainKPICardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AsistenciaProvider>(
+    return Consumer<HybridAsistenciaProvider>(
       builder: (context, provider, _) {
-        // Calcular métricas basadas en datos reales disponibles
-        final asistenciasDetalle = provider.asistenciasDetalle;
+        final porcentaje = provider.kpiAsistenciaPorcentaje;
         
-        // Debug: Mostrar información de las asistencias
-        debugPrint('🔄 MainKPI - Recalculando porcentaje: ${asistenciasDetalle.length} asistencias');
-
-        // Calcular fichas únicas desde las asistencias
-        final fichasUnicas = asistenciasDetalle.map((a) => a.ficha).toSet();
-        
-        // Calcular aprendices únicos por ficha desde asistenciasDetalle
-        final Map<String, Set<String>> aprendicesPorFicha = {};
-        for (var asistencia in asistenciasDetalle) {
-          aprendicesPorFicha.putIfAbsent(asistencia.ficha, () => <String>{}).add(asistencia.numeroDocumento);
-        }
-        
-        // Calcular totales
-        int totalAprendicesEsperados = 0;
-        int totalPresentes = 0;
-        
-        // Para cada ficha única, calcular aprendices esperados y presentes
-        for (var fichaStr in fichasUnicas) {
-          final aprendicesEnFicha = aprendicesPorFicha[fichaStr]?.length ?? 0;
-          
-          // Asumir que cada ficha tiene un número esperado de aprendices
-          // En el futuro esto debería venir del modelo FichaModel
-          final aprendicesEsperadosPorFicha = 20; // Valor por defecto
-          
-          totalAprendicesEsperados += aprendicesEsperadosPorFicha;
-          totalPresentes += aprendicesEnFicha;
-        }
-        
-        // Calcular porcentaje de asistencia
-        final porcentajeAsistencia = totalAprendicesEsperados > 0
-            ? (totalPresentes / totalAprendicesEsperados * 100).round()
-            : 0;
-
-        debugPrint(
-          '🔄 MainKPI - Porcentaje actualizado: $porcentajeAsistencia% (Presentes: $totalPresentes, Esperados: $totalAprendicesEsperados)',
-        );
-
-        return Container(
-          padding: EdgeInsets.all(6.w),
+        return SizedBox(
+          width: double.infinity,
+          child: Container(
+          padding: EdgeInsets.all(24.w),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
+              colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF10B981),
-                Color(0xFF059669),
-              ],
             ),
-            borderRadius: BorderRadius.circular(20.r),
+            borderRadius: BorderRadius.circular(16.r),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF10B981).withOpacity(0.4),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+                color: const Color(0xFF3B82F6).withOpacity(0.2),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icono principal
-              Container(
-                padding: EdgeInsets.all(8.w),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(16.r),
-                ),
-                child: Icon(
-                  Icons.trending_up_rounded,
+              // Título
+              Text(
+                'Asistencia del Día',
+                style: TextStyle(
+                  fontSize: baseFontSize * 1.5,
+                  fontWeight: FontWeight.w600,
                   color: Colors.white,
-                  size: 24.w,
                 ),
               ),
-              SizedBox(width: 12.w),
-              // Información principal
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Asistencia del Día',
+              SizedBox(height: 16.h),
+              
+              // Porcentaje principal
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    porcentaje?.toStringAsFixed(1) ?? '--',
+                    style: TextStyle(
+                      fontSize: baseFontSize * 4,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      height: 1,
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(
+                      left: 4.w,
+                      bottom: 8.h,
+                    ),
+                    child: Text(
+                      '%',
                       style: TextStyle(
-                        fontSize: baseFontSize * 1.0,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white.withOpacity(0.9),
+                        fontSize: baseFontSize * 2,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
-                    SizedBox(height: 6.h),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        // Porcentaje con animación
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 500),
-                          child: Text(
-                            '$porcentajeAsistencia',
-                            key: ValueKey(porcentajeAsistencia),
-                            style: TextStyle(
-                              fontSize: baseFontSize * 3.0,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              height: 1,
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.only(
-                            left: 4.w,
-                            bottom: 8.h,
-                          ),
-                          child: Text(
-                            '%',
-                            style: TextStyle(
-                              fontSize: baseFontSize * 1.5,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
+                  ),
+                ],
+              ),
+              SizedBox(height: 16.h),
+              
+              // Badge de estado
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 16.w,
+                  vertical: 8.h,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20.r),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.sentiment_very_satisfied_rounded,
+                      color: Colors.white,
+                      size: 20.w,
+                    ),
+                    SizedBox(width: 8.w),
+                    Text(
+                      'Excelente',
+                      style: TextStyle(
+                        fontSize: baseFontSize * 1.1,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
                     ),
                   ],
                 ),
               ),
             ],
           ),
+        ),
         );
       },
     );

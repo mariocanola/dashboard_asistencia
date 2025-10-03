@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class ApiConstants {
   /// URL base de la API
   /// Cambia esta IP por la correcta de tu servidor
-  static const String baseUrl = 'http://10.7.55.172:8000/api';
+  static const String baseUrl = 'http://10.7.55.97:8000/api';
 
   /// Endpoints de asistencias (según README backend)
   static const String asistenciaEntrada = '/asistencia/entrada';
@@ -13,7 +13,7 @@ class ApiConstants {
 
   /// Endpoints anteriores (mantener para compatibilidad si es necesario)
   static const String asistencias = '/asistencias';
-  static const String fichas = '/fichas-caracterizacion';
+  static const String fichas = '/fichas-caracterizacion/flutter/all';
   static const String aprendicesPorFicha = '/fichas-caracterizacion/aprendices';
   static const String jornada = '/fichas-caracterizacion/jornada';
 

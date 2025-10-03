@@ -28,17 +28,13 @@ class UltraFastAsistenciasService {
   DateTime? _lastUpdate;
   int _lastCount = 0;
 
-  // Configuración ultra-rápida optimizada para máximo 3 segundos
+  // Configuración ultra-rápida optimizada para máximo 1 segundo
   static const Duration _fastPollingInterval =
-      Duration(seconds: 1); // Reducido a 1s
+      Duration(milliseconds: 500); // Reducido a 500ms para respuesta más rápida
   static const Duration _webSocketTimeout =
       Duration(seconds: 5); // Reducido a 5s
-  static const Duration _batchUpdateDelay =
-      Duration(milliseconds: 200); // Batch updates más rápido
   static const Duration _healthCheckInterval =
       Duration(seconds: 30); // Health check cada 30s
-  static const Duration _statsUpdateTimeout =
-      Duration(seconds: 3); // Timeout específico para estadísticas
   // static const int _maxBatchSize = 50; // Procesar máximo 50 cambios por vez
 
   /// Inicializa el servicio ultra-rápido
@@ -178,14 +174,15 @@ class UltraFastAsistenciasService {
     debugPrint('⏹️ Polling detenido - WebSocket activo');
   }
 
-  /// Actualización ultra-rápida optimizada para máximo 3 segundos
+  /// Actualización ultra-rápida optimizada para máximo 1 segundo
   Future<void> _fastUpdate(AsistenciaProvider provider) async {
     try {
       final startTime = DateTime.now();
+      debugPrint('⚡ Iniciando actualización ultra-rápida...');
 
-      // Actualización paralela de datos con timeout específico para estadísticas
+      // Actualización con timeout reducido a 1 segundo
       await provider.cargarAsistencias().timeout(
-        _statsUpdateTimeout,
+        const Duration(seconds: 1),
         onTimeout: () {
           debugPrint('⏰ Timeout en carga de asistencias - usando cache');
         },
@@ -205,11 +202,26 @@ class UltraFastAsistenciasService {
         _updateCache(changes);
         _lastUpdate = DateTime.now();
 
-        // Notificar UI inmediatamente (sin batch delay)
-        // provider.notifyListeners(); // Comentado - se maneja en el provider
+        debugPrint('✅ Actualización ultra-rápida completada en ${updateTime}ms');
       }
     } catch (e) {
-      debugPrint('❌ Error en actualización rápida: $e');
+      debugPrint('❌ Error en actualización ultra-rápida: $e');
+      // Intentar actualización de respaldo más rápida
+      await _ultraFastBackupUpdate(provider);
+    }
+  }
+
+  /// Actualización de respaldo ultra-rápida (500ms máximo)
+  Future<void> _ultraFastBackupUpdate(AsistenciaProvider provider) async {
+    try {
+      debugPrint('🔄 Ejecutando actualización de respaldo ultra-rápida...');
+      
+      // Solo cargar asistencias con timeout muy corto
+      await provider.cargarAsistencias().timeout(const Duration(milliseconds: 500));
+      
+      debugPrint('✅ Actualización de respaldo ultra-rápida completada');
+    } catch (e) {
+      debugPrint('❌ Error en actualización de respaldo ultra-rápida: $e');
     }
   }
 
@@ -251,32 +263,6 @@ class UltraFastAsistenciasService {
     }
   }
 
-  /// Programa actualización por lotes para UI
-  void _scheduleBatchUpdate(AsistenciaProvider provider) {
-    // Cancelar actualización anterior si existe
-    _batchUpdateTimer?.cancel();
-
-    // Programar nueva actualización
-    _batchUpdateTimer = Timer(_batchUpdateDelay, () {
-      _executeBatchUpdate(provider);
-    });
-  }
-
-  Timer? _batchUpdateTimer;
-
-  /// Ejecuta actualización por lotes
-  void _executeBatchUpdate(AsistenciaProvider provider) {
-    if (_changedIds.isEmpty) return;
-
-    final changesCount = _changedIds.length;
-    debugPrint('🔄 Ejecutando batch update: $changesCount cambios');
-
-    // Limpiar IDs procesados
-    _changedIds.clear();
-
-    // El provider ya se notifica automáticamente al cargar datos
-    debugPrint('✅ Batch update completado');
-  }
 
   /// Fuerza actualización inmediata
   Future<void> forceRefresh(AsistenciaProvider provider) async {
@@ -316,10 +302,10 @@ class UltraFastAsistenciasService {
   /// Limpia los recursos
   void dispose() {
     _stopFastPolling();
-    _batchUpdateTimer?.cancel();
     _webSocketHealthTimer?.cancel();
     _webSocketService.dispose();
     _asistenciasCache.clear();
     _changedIds.clear();
   }
 }
+
