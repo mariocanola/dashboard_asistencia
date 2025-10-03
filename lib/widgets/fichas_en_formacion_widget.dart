@@ -7,9 +7,9 @@ import '../models/asistencia_detalle_model.dart';
 import '../models/ficha_estadisticas_model.dart';
 import '../utils/constants.dart';
 
-/// Widget que muestra las estadísticas de fichas del día en cards compactas
-class AsistenciasDelDiaWidget extends StatelessWidget {
-  const AsistenciasDelDiaWidget({super.key});
+/// Widget que muestra las fichas en formación de forma compacta
+class FichasEnFormacionWidget extends StatelessWidget {
+  const FichasEnFormacionWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -46,16 +46,15 @@ class AsistenciasDelDiaWidget extends StatelessWidget {
         }
 
         return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Estadística general
-            _buildResumenGeneral(asistencias),
+            // Resumen compacto de fichas
+            _buildResumenFichas(estadisticasFichas),
             SizedBox(height: 16.h),
 
-            // Cards de fichas
+            // Lista de fichas
             ...estadisticasFichas.map((estadistica) {
               return Padding(
-                padding: EdgeInsets.only(bottom: 12.h),
+                padding: EdgeInsets.only(bottom: 8.h),
                 child: _buildFichaCard(estadistica),
               );
             }),
@@ -68,7 +67,7 @@ class AsistenciasDelDiaWidget extends StatelessWidget {
   /// Widget de estado de carga
   Widget _buildLoadingState() {
     return Container(
-      padding: EdgeInsets.all(32.w),
+      padding: EdgeInsets.all(24.w),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16.r),
@@ -76,15 +75,21 @@ class AsistenciasDelDiaWidget extends StatelessWidget {
       ),
       child: Center(
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(
-              color: DesignConstants.primaryBlue,
+            SizedBox(
+              width: 24.w,
+              height: 24.w,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: DesignConstants.primaryBlue,
+              ),
             ),
-            SizedBox(height: 16.h),
+            SizedBox(height: 12.h),
             Text(
-              'Cargando asistencias...',
+              'Cargando fichas...',
               style: TextStyle(
-                fontSize: 14.sp,
+                fontSize: 12.sp,
                 color: DesignConstants.textSecondary,
               ),
             ),
@@ -97,7 +102,7 @@ class AsistenciasDelDiaWidget extends StatelessWidget {
   /// Widget de estado vacío
   Widget _buildEmptyState() {
     return Container(
-      padding: EdgeInsets.all(32.w),
+      padding: EdgeInsets.all(24.w),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16.r),
@@ -105,26 +110,27 @@ class AsistenciasDelDiaWidget extends StatelessWidget {
       ),
       child: Center(
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.event_busy_rounded,
-              size: 48.w,
+              Icons.school_outlined,
+              size: 32.w,
               color: DesignConstants.textSecondary,
             ),
-            SizedBox(height: 16.h),
+            SizedBox(height: 12.h),
             Text(
-              'No hay asistencias registradas hoy',
+              'No hay fichas activas',
               style: TextStyle(
-                fontSize: 16.sp,
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w600,
                 color: DesignConstants.textPrimary,
               ),
             ),
-            SizedBox(height: 8.h),
+            SizedBox(height: 4.h),
             Text(
-              'Las asistencias aparecerán aquí cuando se registren',
+              'Las fichas aparecerán aquí cuando estén activas',
               style: TextStyle(
-                fontSize: 14.sp,
+                fontSize: 12.sp,
                 color: DesignConstants.textSecondary,
               ),
               textAlign: TextAlign.center,
@@ -135,43 +141,24 @@ class AsistenciasDelDiaWidget extends StatelessWidget {
     );
   }
 
-  /// Widget de resumen general
-  Widget _buildResumenGeneral(List<AsistenciaDetalle> asistencias) {
-    // Agrupar por ficha para contar fichas en lugar de aprendices
-    final Map<String, List<AsistenciaDetalle>> porFicha = {};
-    for (var asistencia in asistencias) {
-      if (!porFicha.containsKey(asistencia.ficha)) {
-        porFicha[asistencia.ficha] = [];
-      }
-      porFicha[asistencia.ficha]!.add(asistencia);
-    }
-
-    final totalFichas = porFicha.length;
-
-    // Contar fichas con asistencias en curso y completas
-    int fichasEnCurso = 0;
-    int fichasCompletas = 0;
-
-    for (var fichaAsistencias in porFicha.values) {
-      final tieneEnCurso = fichaAsistencias.any((a) => a.isEnCurso);
-      final tieneCompletas = fichaAsistencias.any((a) => a.isCompleta);
-
-      if (tieneEnCurso) fichasEnCurso++;
-      if (tieneCompletas) fichasCompletas++;
-    }
+  /// Widget de resumen compacto de fichas
+  Widget _buildResumenFichas(List<FichaEstadisticas> fichas) {
+    final totalFichas = fichas.length;
+    final fichasActivas = fichas.where((f) => f.estadoGeneral != 'SIN DATOS').length;
+    final totalAprendices = fichas.fold(0, (sum, f) => sum + f.totalAprendices);
 
     return Container(
-      padding: EdgeInsets.all(20.w),
+      padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+          colors: [Color(0xFF10B981), Color(0xFF059669)],
         ),
-        borderRadius: BorderRadius.circular(16.r),
+        borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF3B82F6).withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+            color: const Color(0xFF10B981).withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -179,33 +166,33 @@ class AsistenciasDelDiaWidget extends StatelessWidget {
         children: [
           Expanded(
             child: _buildStatItem(
-              icon: Icons.badge_rounded,
-              label: 'Total Fichas',
+              icon: Icons.school_rounded,
+              label: 'Fichas',
               value: totalFichas.toString(),
             ),
           ),
           Container(
             width: 1,
-            height: 40.h,
+            height: 30.h,
             color: Colors.white.withOpacity(0.3),
           ),
           Expanded(
             child: _buildStatItem(
-              icon: Icons.pending_actions_rounded,
-              label: 'Con En Curso',
-              value: fichasEnCurso.toString(),
+              icon: Icons.people_rounded,
+              label: 'Aprendices',
+              value: totalAprendices.toString(),
             ),
           ),
           Container(
             width: 1,
-            height: 40.h,
+            height: 30.h,
             color: Colors.white.withOpacity(0.3),
           ),
           Expanded(
             child: _buildStatItem(
               icon: Icons.check_circle_rounded,
-              label: 'Con Completas',
-              value: fichasCompletas.toString(),
+              label: 'Activas',
+              value: fichasActivas.toString(),
             ),
           ),
         ],
@@ -223,22 +210,22 @@ class AsistenciasDelDiaWidget extends StatelessWidget {
         Icon(
           icon,
           color: Colors.white,
-          size: 24.w,
+          size: 16.w,
         ),
-        SizedBox(height: 8.h),
+        SizedBox(height: 4.h),
         Text(
           value,
           style: TextStyle(
-            fontSize: 24.sp,
+            fontSize: 16.sp,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
         ),
-        SizedBox(height: 4.h),
+        SizedBox(height: 2.h),
         Text(
           label,
           style: TextStyle(
-            fontSize: 12.sp,
+            fontSize: 10.sp,
             color: Colors.white.withOpacity(0.9),
           ),
           textAlign: TextAlign.center,
@@ -247,18 +234,18 @@ class AsistenciasDelDiaWidget extends StatelessWidget {
     );
   }
 
-  /// Widget de card compacta para ficha
+  /// Widget de card de ficha compacta
   Widget _buildFichaCard(FichaEstadisticas estadistica) {
     return Container(
-      padding: EdgeInsets.all(16.w),
+      padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12.r),
+        borderRadius: BorderRadius.circular(10.r),
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 4,
             offset: const Offset(0, 2),
           ),
         ],
@@ -267,18 +254,18 @@ class AsistenciasDelDiaWidget extends StatelessWidget {
         children: [
           // Icono de ficha
           Container(
-            padding: EdgeInsets.all(8.w),
+            padding: EdgeInsets.all(6.w),
             decoration: BoxDecoration(
               color: DesignConstants.primaryBlue.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8.r),
+              borderRadius: BorderRadius.circular(6.r),
             ),
             child: Icon(
               Icons.badge_rounded,
               color: DesignConstants.primaryBlue,
-              size: 20.w,
+              size: 16.w,
             ),
           ),
-          SizedBox(width: 12.w),
+          SizedBox(width: 10.w),
 
           // Información de la ficha
           Expanded(
@@ -288,16 +275,16 @@ class AsistenciasDelDiaWidget extends StatelessWidget {
                 Text(
                   'Ficha ${estadistica.ficha}',
                   style: TextStyle(
-                    fontSize: 14.sp,
+                    fontSize: 13.sp,
                     fontWeight: FontWeight.w600,
                     color: DesignConstants.textPrimary,
                   ),
                 ),
-                SizedBox(height: 4.h),
+                SizedBox(height: 2.h),
                 Text(
                   '${estadistica.totalAprendices} aprendices',
                   style: TextStyle(
-                    fontSize: 12.sp,
+                    fontSize: 11.sp,
                     color: DesignConstants.textSecondary,
                   ),
                 ),
@@ -307,10 +294,10 @@ class AsistenciasDelDiaWidget extends StatelessWidget {
 
           // Porcentaje de variación con flecha
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+            padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
             decoration: BoxDecoration(
               color: estadistica.flechaColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(6.r),
+              borderRadius: BorderRadius.circular(4.r),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -318,13 +305,13 @@ class AsistenciasDelDiaWidget extends StatelessWidget {
                 Icon(
                   estadistica.flechaIcon,
                   color: estadistica.flechaColor,
-                  size: 16.w,
+                  size: 12.w,
                 ),
-                SizedBox(width: 4.w),
+                SizedBox(width: 2.w),
                 Text(
                   estadistica.porcentajeVariacionFormateado,
                   style: TextStyle(
-                    fontSize: 12.sp,
+                    fontSize: 10.sp,
                     fontWeight: FontWeight.w600,
                     color: estadistica.flechaColor,
                   ),
@@ -333,19 +320,19 @@ class AsistenciasDelDiaWidget extends StatelessWidget {
             ),
           ),
 
-          SizedBox(width: 12.w),
+          SizedBox(width: 8.w),
 
           // Estado general
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+            padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
             decoration: BoxDecoration(
               color: estadistica.estadoColor,
-              borderRadius: BorderRadius.circular(6.r),
+              borderRadius: BorderRadius.circular(4.r),
             ),
             child: Text(
               estadistica.estadoGeneral,
               style: TextStyle(
-                fontSize: 10.sp,
+                fontSize: 9.sp,
                 fontWeight: FontWeight.w600,
                 color: Colors.white,
               ),

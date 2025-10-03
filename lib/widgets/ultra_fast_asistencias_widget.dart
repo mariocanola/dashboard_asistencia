@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
 import '../models/asistencia_detalle_model.dart';
+import '../models/ficha_estadisticas_model.dart';
 import '../providers/asistencia_provider.dart';
 import '../services/ultra_fast_asistencias_service.dart';
 import '../utils/constants.dart';
@@ -15,11 +16,14 @@ class UltraFastAsistenciasWidget extends StatefulWidget {
   const UltraFastAsistenciasWidget({super.key});
 
   @override
-  State<UltraFastAsistenciasWidget> createState() => _UltraFastAsistenciasWidgetState();
+  State<UltraFastAsistenciasWidget> createState() =>
+      _UltraFastAsistenciasWidgetState();
 }
 
-class _UltraFastAsistenciasWidgetState extends State<UltraFastAsistenciasWidget> {
-  final UltraFastAsistenciasService _ultraFastService = UltraFastAsistenciasService();
+class _UltraFastAsistenciasWidgetState
+    extends State<UltraFastAsistenciasWidget> {
+  final UltraFastAsistenciasService _ultraFastService =
+      UltraFastAsistenciasService();
   Timer? _statusTimer;
 
   @override
@@ -249,11 +253,23 @@ class _UltraFastAsistenciasWidgetState extends State<UltraFastAsistenciasWidget>
   }
 
   /// Widget principal ultra-optimizado
-  Widget _buildUltraFastContent(List<AsistenciaDetalle> asistencias, AsistenciaProvider provider) {
-    // Agrupar asistencias por jornada - optimizado
-    final Map<String, List<AsistenciaDetalle>> porJornada = {};
+  Widget _buildUltraFastContent(
+      List<AsistenciaDetalle> asistencias, AsistenciaProvider provider) {
+    // Agrupar asistencias por ficha - optimizado
+    final Map<String, List<AsistenciaDetalle>> porFicha = {};
     for (var asistencia in asistencias) {
-      porJornada.putIfAbsent(asistencia.jornada, () => []).add(asistencia);
+      porFicha.putIfAbsent(asistencia.ficha, () => []).add(asistencia);
+    }
+
+    // Crear estadísticas para cada ficha
+    final List<FichaEstadisticas> estadisticasFichas = [];
+    for (var entry in porFicha.entries) {
+      estadisticasFichas.add(
+        FichaEstadisticas.fromAsistencias(
+          ficha: entry.key,
+          asistencias: entry.value,
+        ),
+      );
     }
 
     return Column(
@@ -263,34 +279,55 @@ class _UltraFastAsistenciasWidgetState extends State<UltraFastAsistenciasWidget>
         _buildUltraFastResumen(asistencias),
         SizedBox(height: 16.h),
 
-        // Indicador de estado ultra-rápido
-        _buildUltraFastStatusIndicator(),
-        SizedBox(height: 16.h),
+        // Indicador de estado ultra-rápido (oculto)
+        Visibility(
+          visible: false,
+          child: Column(
+            children: [
+              _buildUltraFastStatusIndicator(),
+              SizedBox(height: 16.h),
+            ],
+          ),
+        ),
 
-        // Botones de prueba ultra-rápida (solo en debug)
-        if (kDebugMode) ...[
-          _buildUltraFastTestButtons(provider),
-          SizedBox(height: 16.h),
-        ],
+        // Botones de prueba ultra-rápida (ocultos)
+        Visibility(
+          visible: false,
+          child: Column(
+            children: [
+              _buildUltraFastTestButtons(provider),
+              SizedBox(height: 16.h),
+            ],
+          ),
+        ),
 
-        // Asistencias por jornada - optimizadas
-        ...porJornada.entries.map((entry) {
-          return Padding(
-            padding: EdgeInsets.only(bottom: 16.h),
-            child: _buildUltraFastJornadaSection(
-              jornada: entry.key,
-              asistencias: entry.value,
-            ),
-          );
-        }).toList(),
+        // Las fichas se muestran en la sección separada "Fichas en Formación"
       ],
     );
   }
 
   /// Widget de resumen ultra-rápido (optimizado - sin redundancia)
   Widget _buildUltraFastResumen(List<AsistenciaDetalle> asistencias) {
-    final enCurso = asistencias.where((a) => a.isEnCurso).length;
-    final completas = asistencias.where((a) => a.isCompleta).length;
+    // Agrupar por ficha para contar fichas en lugar de aprendices
+    final Map<String, List<AsistenciaDetalle>> porFicha = {};
+    for (var asistencia in asistencias) {
+      porFicha.putIfAbsent(asistencia.ficha, () => []).add(asistencia);
+    }
+
+    final totalFichas = porFicha.length;
+
+    // Contar fichas con asistencias en curso y completas
+    int fichasEnCurso = 0;
+    int fichasCompletas = 0;
+
+    for (var fichaAsistencias in porFicha.values) {
+      final tieneEnCurso = fichaAsistencias.any((a) => a.isEnCurso);
+      final tieneCompletas = fichaAsistencias.any((a) => a.isCompleta);
+
+      if (tieneEnCurso) fichasEnCurso++;
+      if (tieneCompletas) fichasCompletas++;
+    }
+
     final responseTime = _ultraFastService.getResponseTime();
 
     return Container(
@@ -312,9 +349,21 @@ class _UltraFastAsistenciasWidgetState extends State<UltraFastAsistenciasWidget>
         children: [
           Expanded(
             child: _buildStatItem(
+              icon: Icons.badge_rounded,
+              label: 'Total Fichas',
+              value: totalFichas.toString(),
+            ),
+          ),
+          Container(
+            width: 1,
+            height: 40.h,
+            color: Colors.white.withOpacity(0.3),
+          ),
+          Expanded(
+            child: _buildStatItem(
               icon: Icons.pending_actions_rounded,
-              label: 'En Curso',
-              value: enCurso.toString(),
+              label: 'Con En Curso',
+              value: fichasEnCurso.toString(),
             ),
           ),
           Container(
@@ -325,8 +374,8 @@ class _UltraFastAsistenciasWidgetState extends State<UltraFastAsistenciasWidget>
           Expanded(
             child: _buildStatItem(
               icon: Icons.check_circle_rounded,
-              label: 'Completas',
-              value: completas.toString(),
+              label: 'Con Completas',
+              value: fichasCompletas.toString(),
             ),
           ),
           Container(
@@ -448,7 +497,8 @@ class _UltraFastAsistenciasWidgetState extends State<UltraFastAsistenciasWidget>
                       if (pendingChanges > 0) ...[
                         SizedBox(width: 8.w),
                         Container(
-                          padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 6.w, vertical: 2.h),
                           decoration: BoxDecoration(
                             color: statusColor,
                             borderRadius: BorderRadius.circular(10.r),
@@ -514,11 +564,13 @@ class _UltraFastAsistenciasWidgetState extends State<UltraFastAsistenciasWidget>
                   _ultraFastService.forceRefresh(provider);
                 },
                 icon: Icon(Icons.bolt_rounded, size: 16.w),
-                label: Text('Actualizar Ahora', style: TextStyle(fontSize: 12.sp)),
+                label:
+                    Text('Actualizar Ahora', style: TextStyle(fontSize: 12.sp)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF10B981),
                   foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                 ),
               ),
               ElevatedButton.icon(
@@ -530,7 +582,8 @@ class _UltraFastAsistenciasWidgetState extends State<UltraFastAsistenciasWidget>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF3B82F6),
                   foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                 ),
               ),
               ElevatedButton.icon(
@@ -538,11 +591,13 @@ class _UltraFastAsistenciasWidgetState extends State<UltraFastAsistenciasWidget>
                   _simulateHighLoad(provider);
                 },
                 icon: Icon(Icons.burst_mode_rounded, size: 16.w),
-                label: Text('Simular Carga Alta', style: TextStyle(fontSize: 12.sp)),
+                label: Text('Simular Carga Alta',
+                    style: TextStyle(fontSize: 12.sp)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF8B5CF6),
                   foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                 ),
               ),
             ],
@@ -555,242 +610,12 @@ class _UltraFastAsistenciasWidgetState extends State<UltraFastAsistenciasWidget>
   /// Simula carga alta para pruebas
   void _simulateHighLoad(AsistenciaProvider provider) {
     debugPrint('🚀 Simulando carga alta - 10 actualizaciones rápidas');
-    
+
     for (int i = 0; i < 10; i++) {
       Future.delayed(Duration(milliseconds: i * 100), () {
         _ultraFastService.forceRefresh(provider);
       });
     }
-  }
-
-  /// Widget de sección por jornada ultra-optimizada
-  Widget _buildUltraFastJornadaSection({
-    required String jornada,
-    required List<AsistenciaDetalle> asistencias,
-  }) {
-    // Color según jornada
-    Color color;
-    IconData icon;
-    switch (jornada.toUpperCase()) {
-      case 'MAÑANA':
-        color = const Color(0xFFF59E0B);
-        icon = Icons.wb_sunny_rounded;
-        break;
-      case 'TARDE':
-        color = const Color(0xFF8B5CF6);
-        icon = Icons.wb_twilight_rounded;
-        break;
-      case 'NOCHE':
-        color = const Color(0xFF6366F1);
-        icon = Icons.nightlight_round_rounded;
-        break;
-      default:
-        color = DesignConstants.primaryBlue;
-        icon = Icons.access_time_rounded;
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header de la jornada
-          Container(
-            padding: EdgeInsets.all(16.w),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(16.r),
-                topRight: Radius.circular(16.r),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(8.w),
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: Colors.white,
-                    size: 20.w,
-                  ),
-                ),
-                SizedBox(width: 12.w),
-                Text(
-                  jornada,
-                  style: TextStyle(
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.w600,
-                    color: DesignConstants.textPrimary,
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 12.w,
-                    vertical: 6.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(20.r),
-                  ),
-                  child: Text(
-                    '${asistencias.length} asistencias',
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Lista de asistencias optimizada
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: EdgeInsets.all(16.w),
-            itemCount: asistencias.length,
-            separatorBuilder: (context, index) => Divider(
-              height: 12.h,
-              color: const Color(0xFFE2E8F0),
-            ),
-            itemBuilder: (context, index) {
-              final asistencia = asistencias[index];
-              return _buildUltraFastAsistenciaItem(asistencia);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Widget de item de asistencia ultra-optimizado
-  Widget _buildUltraFastAsistenciaItem(AsistenciaDetalle asistencia) {
-    final isEnCurso = asistencia.isEnCurso;
-    final estadoColor = isEnCurso
-        ? DesignConstants.warningOrange
-        : DesignConstants.successGreen;
-    final estadoTexto = isEnCurso ? 'EN CURSO' : 'COMPLETA';
-    final estadoIcon =
-        isEnCurso ? Icons.pending_rounded : Icons.check_circle_rounded;
-
-    return Container(
-      child: Row(
-        children: [
-          // Icono de estado
-          Container(
-            padding: EdgeInsets.all(6.w),
-            decoration: BoxDecoration(
-              color: estadoColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(6.r),
-            ),
-            child: Icon(
-              estadoIcon,
-              color: estadoColor,
-              size: 16.w,
-            ),
-          ),
-          SizedBox(width: 10.w),
-
-          // Información del aprendiz - compacta
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  asistencia.aprendiz,
-                  style: TextStyle(
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w600,
-                    color: DesignConstants.textPrimary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: 2.h),
-                Row(
-                  children: [
-                    Text(
-                      'Ficha ${asistencia.ficha}',
-                      style: TextStyle(
-                        fontSize: 11.sp,
-                        color: DesignConstants.textSecondary,
-                      ),
-                    ),
-                    SizedBox(width: 8.w),
-                    Text(
-                      asistencia.numeroDocumento,
-                      style: TextStyle(
-                        fontSize: 11.sp,
-                        color: DesignConstants.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          // Horarios y estado - compacto
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 6.w,
-                  vertical: 2.h,
-                ),
-                decoration: BoxDecoration(
-                  color: estadoColor,
-                  borderRadius: BorderRadius.circular(4.r),
-                ),
-                child: Text(
-                  estadoTexto,
-                  style: TextStyle(
-                    fontSize: 9.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              SizedBox(height: 2.h),
-              Text(
-                asistencia.horaIngreso,
-                style: TextStyle(
-                  fontSize: 11.sp,
-                  color: DesignConstants.textSecondary,
-                ),
-              ),
-              if (asistencia.horaSalida != null)
-                Text(
-                  asistencia.horaSalida!,
-                  style: TextStyle(
-                    fontSize: 11.sp,
-                    color: DesignConstants.textSecondary,
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
   }
 
   /// Formatea la última actualización
@@ -799,7 +624,7 @@ class _UltraFastAsistenciasWidgetState extends State<UltraFastAsistenciasWidget>
       final date = DateTime.parse(isoString);
       final now = DateTime.now();
       final difference = now.difference(date);
-      
+
       if (difference.inSeconds < 60) {
         return 'hace ${difference.inSeconds}s';
       } else if (difference.inMinutes < 60) {
