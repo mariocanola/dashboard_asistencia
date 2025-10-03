@@ -92,27 +92,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ? 24.0
                         : 20.0;
 
-    // Flex ratios responsivos
+    // Flex ratios responsivos - Ajustados para dar más espacio a "Fichas en Formación"
     int leftColumnFlex = isTV
-        ? 4
+        ? 3
         : isUltraWide
-            ? 3
+            ? 2
             : isLargeDesktop
-                ? 3
+                ? 2
                 : isDesktop
-                    ? 3
+                    ? 2
                     : isTablet
                         ? 2
                         : 1;
 
     int rightColumnFlex = isTV
-        ? 1
+        ? 2
         : isUltraWide
-            ? 1
+            ? 2
             : isLargeDesktop
-                ? 1
+                ? 2
                 : isDesktop
-                    ? 1
+                    ? 2
                     : isTablet
                         ? 1
                         : 1;
