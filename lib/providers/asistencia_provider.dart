@@ -184,7 +184,7 @@ class AsistenciaProvider with ChangeNotifier {
     }
   }
 
-  /// Carga asistencias desde el API
+  /// Carga asistencias desde el API (optimizado para máximo 2s)
   /// Obtiene todas las jornadas del día actual
   Future<void> cargarAsistencias() async {
     try {
@@ -195,7 +195,7 @@ class AsistenciaProvider with ChangeNotifier {
         jornadaId: null,
         // Usar fecha actual automáticamente
         fecha: DateTime.now(),
-      );
+      ).timeout(const Duration(seconds: 2));
 
       _asistenciasDetalle = response.asistencias;
 
@@ -344,15 +344,18 @@ class AsistenciaProvider with ChangeNotifier {
     _actualizarDatosDesdeWebSocket();
   }
 
-  /// Actualiza los datos cuando se recibe un evento WebSocket
+  /// Actualiza los datos cuando se recibe un evento WebSocket (optimizado para máximo 2s)
   Future<void> _actualizarDatosDesdeWebSocket() async {
     try {
       // Solo actualizar si no estamos en proceso de carga
       if (!_isLoading && !_isUpdating) {
         _setUpdating(true);
 
-        // Actualizar datos en paralelo
-        await Future.wait([_cargarEstadisticas(), cargarAsistencias()]);
+        // Actualizar datos en paralelo con timeout de 2 segundos
+        await Future.wait([
+          _cargarEstadisticas().timeout(const Duration(seconds: 2)),
+          cargarAsistencias().timeout(const Duration(seconds: 2)),
+        ]).timeout(const Duration(seconds: 2));
 
         notifyListeners();
       }

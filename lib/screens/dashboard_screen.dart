@@ -7,6 +7,8 @@ import '../providers/asistencia_provider.dart';
 import '../widgets/dashboard_header.dart';
 import '../widgets/ultra_fast_asistencias_widget.dart';
 import '../widgets/fichas_en_formacion_widget.dart';
+import '../widgets/metrics_cards_widget.dart';
+import '../widgets/main_kpi_card_widget.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -116,56 +118,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         : 1;
 
     final provider = Provider.of<AsistenciaProvider>(context);
-    // Calcular métricas basadas en datos reales disponibles
-    final asistenciasDetalle = provider.asistenciasDetalle;
-    
-    // Debug: Mostrar información de las asistencias
+
+    // Debug: Mostrar información básica
     debugPrint('🔍 Dashboard - Jornada actual: ${provider.jornadaActual}');
-    debugPrint('🔍 Dashboard - Asistencias detalle: ${asistenciasDetalle.length}');
-    debugPrint('🔍 Dashboard - Todas las fichas: ${provider.fichas.length}');
-    
-    // Debug detallado de asistencias
-    for (var asistencia in asistenciasDetalle.take(5)) {
-      debugPrint('   - Asistencia: Ficha ${asistencia.ficha}, Aprendiz ${asistencia.aprendiz}, Jornada ${asistencia.jornada}');
-    }
-
-    // Calcular fichas únicas desde las asistencias
-    final fichasUnicas = asistenciasDetalle.map((a) => a.ficha).toSet();
-    final totalFichas = fichasUnicas.length;
-    
-    // Calcular aprendices únicos por ficha desde asistenciasDetalle
-    final Map<String, Set<String>> aprendicesPorFicha = {};
-    for (var asistencia in asistenciasDetalle) {
-      aprendicesPorFicha.putIfAbsent(asistencia.ficha, () => <String>{}).add(asistencia.numeroDocumento);
-    }
-    
-    // Calcular totales
-    int totalAprendicesEsperados = 0;
-    int totalPresentes = 0;
-    
-    // Para cada ficha única, calcular aprendices esperados y presentes
-    for (var fichaStr in fichasUnicas) {
-      final aprendicesEnFicha = aprendicesPorFicha[fichaStr]?.length ?? 0;
-      
-      // Asumir que cada ficha tiene un número esperado de aprendices
-      // En el futuro esto debería venir del modelo FichaModel
-      final aprendicesEsperadosPorFicha = 20; // Valor por defecto
-      
-      totalAprendicesEsperados += aprendicesEsperadosPorFicha;
-      totalPresentes += aprendicesEnFicha;
-    }
-    
-    // Calcular ausentes como diferencia
-    final totalAusentes = totalAprendicesEsperados - totalPresentes;
-    
-    // Calcular porcentaje de asistencia
-    final porcentajeAsistencia = totalAprendicesEsperados > 0
-        ? (totalPresentes / totalAprendicesEsperados * 100).round()
-        : 0;
-
     debugPrint(
-      '🔍 Dashboard - Total fichas: $totalFichas, Esperados: $totalAprendicesEsperados, Presentes: $totalPresentes, Ausentes: $totalAusentes, %: $porcentajeAsistencia%',
-    );
+        '🔍 Dashboard - Asistencias detalle: ${provider.asistenciasDetalle.length}');
+    debugPrint('🔍 Dashboard - Todas las fichas: ${provider.fichas.length}');
 
     final fechaActual = _formatDate(DateTime.now());
     final horaActual = DateFormat('h:mm a').format(DateTime.now());
@@ -381,10 +339,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             horaActual: horaActual,
                             jornadaActual: jornadaActual,
                             providerConsumer: providerConsumer,
-                            totalFichas: totalFichas,
-                            totalPresentes: totalPresentes,
-                            totalAusentes: totalAusentes,
-                            porcentajeAsistencia: porcentajeAsistencia,
                           )
                         : Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -405,153 +359,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     SizedBox(height: basePadding),
 
                                     // KPI Principal - Porcentaje de Asistencia (Hero)
-                                    Container(
-                                      padding: EdgeInsets.all(6.w),
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                          colors: [
-                                            const Color(0xFF10B981),
-                                            const Color(0xFF059669),
-                                          ],
-                                        ),
-                                        borderRadius:
-                                            BorderRadius.circular(20.r),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: const Color(0xFF10B981)
-                                                .withOpacity(0.4),
-                                            blurRadius: 20,
-                                            offset: const Offset(0, 10),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          // Icono principal
-                                          Container(
-                                            padding: EdgeInsets.all(8.w),
-                                            decoration: BoxDecoration(
-                                              color:
-                                                  Colors.white.withOpacity(0.2),
-                                              borderRadius:
-                                                  BorderRadius.circular(16.r),
-                                            ),
-                                            child: Icon(
-                                              Icons.trending_up_rounded,
-                                              color: Colors.white,
-                                              size: 24.w,
-                                            ),
-                                          ),
-                                          SizedBox(width: 16.w),
-                                          // Información principal
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  'Asistencia del Día',
-                                                  style: TextStyle(
-                                                    fontSize:
-                                                        baseFontSize * 1.0,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: Colors.white
-                                                        .withOpacity(0.9),
-                                                  ),
-                                                ),
-                                                SizedBox(height: 6.h),
-                                                Row(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.end,
-                                                  children: [
-                                                    Text(
-                                                      '$porcentajeAsistencia',
-                                                      style: TextStyle(
-                                                        fontSize:
-                                                            baseFontSize * 3.0,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        color: Colors.white,
-                                                        height: 1,
-                                                      ),
-                                                    ),
-                                                    Padding(
-                                                      padding: EdgeInsets.only(
-                                                        left: 4.w,
-                                                        bottom: 8.h,
-                                                      ),
-                                                      child: Text(
-                                                        '%',
-                                                        style: TextStyle(
-                                                          fontSize:
-                                                              baseFontSize *
-                                                                  1.5,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          color: Colors.white,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
+                                    MainKPICardWidget(
+                                        baseFontSize: baseFontSize),
                                     SizedBox(height: basePadding),
 
-                                    // Métricas Complementarias (sin redundancia)
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: _buildMetricCard(
-                                            context: context,
-                                            title: 'Total Fichas',
-                                            value: totalFichas.toString(),
-                                            icon: Icons.assignment_rounded,
-                                            color: const Color(0xFF3B82F6),
-                                            baseFontSize: baseFontSize,
-                                          ),
-                                        ),
-                                        SizedBox(width: 16.w),
-                                        Expanded(
-                                          child: _buildMetricCard(
-                                            context: context,
-                                            title: 'Presentes',
-                                            value: totalPresentes.toString(),
-                                            icon: Icons.check_circle_rounded,
-                                            color: const Color(0xFF10B981),
-                                            baseFontSize: baseFontSize,
-                                          ),
-                                        ),
-                                        SizedBox(width: 16.w),
-                                        Expanded(
-                                          child: _buildMetricCard(
-                                            context: context,
-                                            title: 'Ausentes',
-                                            value: totalAusentes.toString(),
-                                            icon: Icons.cancel_rounded,
-                                            color: const Color(0xFFEF4444),
-                                            baseFontSize: baseFontSize,
-                                          ),
-                                        ),
-                                        SizedBox(width: 16.w),
-                                        Expanded(
-                                          child: _buildMetricCard(
-                                            context: context,
-                                            title: 'Jornada',
-                                            value: jornadaActual,
-                                            icon: Icons.schedule_rounded,
-                                            color: const Color(0xFF8B5CF6),
-                                            baseFontSize: baseFontSize,
-                                            isTextValue: true,
-                                          ),
-                                        ),
-                                      ],
+                                    // Métricas Complementarias (optimizadas para WebSocket)
+                                    MetricsCardsWidget(
+                                      baseFontSize: baseFontSize,
+                                      jornadaActual: jornadaActual,
                                     ),
                                     SizedBox(height: basePadding),
 
@@ -661,10 +476,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required String horaActual,
     required String jornadaActual,
     required AsistenciaProvider providerConsumer,
-    required int totalFichas,
-    required int totalPresentes,
-    required int totalAusentes,
-    required int porcentajeAsistencia,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -730,7 +541,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '$porcentajeAsistencia',
+                    '0',
                     style: TextStyle(
                       fontSize: baseFontSize * 4,
                       fontWeight: FontWeight.bold,
@@ -769,21 +580,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      porcentajeAsistencia >= 90
-                          ? Icons.sentiment_very_satisfied_rounded
-                          : porcentajeAsistencia >= 70
-                              ? Icons.sentiment_satisfied_rounded
-                              : Icons.sentiment_dissatisfied_rounded,
+                      Icons.sentiment_very_satisfied_rounded,
                       color: Colors.white,
                       size: 20.w,
                     ),
                     SizedBox(width: 8.w),
                     Text(
-                      porcentajeAsistencia >= 90
-                          ? 'Excelente'
-                          : porcentajeAsistencia >= 70
-                              ? 'Bueno'
-                              : 'Bajo',
+                      'Excelente',
                       style: TextStyle(
                         fontSize: baseFontSize * 1.1,
                         fontWeight: FontWeight.w600,
@@ -798,62 +601,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         SizedBox(height: basePadding),
 
-        // Métricas Complementarias (2x2 en móvil)
-        Column(
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: _buildMetricCard(
-                    context: context,
-                    title: 'Total Fichas',
-                    value: totalFichas.toString(),
-                    icon: Icons.assignment_rounded,
-                    color: const Color(0xFF3B82F6),
-                    baseFontSize: baseFontSize,
-                  ),
-                ),
-                SizedBox(width: 8.w),
-                Expanded(
-                  child: _buildMetricCard(
-                    context: context,
-                    title: 'Presentes',
-                    value: totalPresentes.toString(),
-                    icon: Icons.check_circle_rounded,
-                    color: const Color(0xFF10B981),
-                    baseFontSize: baseFontSize,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 8.h),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildMetricCard(
-                    context: context,
-                    title: 'Ausentes',
-                    value: totalAusentes.toString(),
-                    icon: Icons.cancel_rounded,
-                    color: const Color(0xFFEF4444),
-                    baseFontSize: baseFontSize,
-                  ),
-                ),
-                SizedBox(width: 8.w),
-                Expanded(
-                  child: _buildMetricCard(
-                    context: context,
-                    title: 'Jornada',
-                    value: jornadaActual,
-                    icon: Icons.schedule_rounded,
-                    color: const Color(0xFF8B5CF6),
-                    baseFontSize: baseFontSize,
-                    isTextValue: true,
-                  ),
-                ),
-              ],
-            ),
-          ],
+        // Métricas Complementarias (optimizadas para WebSocket)
+        MetricsCardsWidget(
+          baseFontSize: baseFontSize,
+          jornadaActual: jornadaActual,
         ),
         SizedBox(height: basePadding),
 
@@ -959,135 +710,5 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final month = months[date.month - 1];
     final year = date.year;
     return '$weekday, $day de $month de $year';
-  }
-
-  /// Construye una tarjeta de métrica moderna y elegante
-  Widget _buildMetricCard({
-    required BuildContext context,
-    required String title,
-    required String value,
-    required IconData icon,
-    required Color color,
-    required double baseFontSize,
-    bool isTextValue = false,
-  }) {
-    // Definir gradientes sutiles para cada tipo de card
-    LinearGradient cardGradient;
-    switch (color.value) {
-      case 0xFF3B82F6: // Azul - Total Fichas
-        cardGradient = const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFF0F7FF), Color(0xFFE6F2FF)],
-        );
-        break;
-      case 0xFF10B981: // Verde - Presentes
-        cardGradient = const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFF0FDF4), Color(0xFFE6FFED)],
-        );
-        break;
-      case 0xFFEF4444: // Rojo - Ausentes
-        cardGradient = const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFFFF5F5), Color(0xFFFFEBEB)],
-        );
-        break;
-      case 0xFF8B5CF6: // Morado - Jornada
-        cardGradient = const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFF8F5FF), Color(0xFFF0EBFF)],
-        );
-        break;
-      default:
-        cardGradient = const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFF8FAFC), Color(0xFFF1F5F9)],
-        );
-    }
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        gradient: cardGradient,
-        borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(
-          color: color.withOpacity(0.15),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.1),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-            spreadRadius: 0,
-          ),
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Icono con fondo circular moderno
-          Container(
-            padding: EdgeInsets.all(10.w),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(16.r),
-              boxShadow: [
-                BoxShadow(
-                  color: color.withOpacity(0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 20.w,
-            ),
-          ),
-          SizedBox(height: 12.h),
-          // Valor principal
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: Text(
-              value,
-              key: ValueKey(value),
-              style: TextStyle(
-                fontSize: isTextValue ? baseFontSize * 1.3 : baseFontSize * 2.2,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF1E293B),
-                letterSpacing: -0.5,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          SizedBox(height: 6.h),
-          // Título elegante
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: baseFontSize * 0.9,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.2,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
