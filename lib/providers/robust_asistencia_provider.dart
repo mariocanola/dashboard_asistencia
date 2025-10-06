@@ -15,7 +15,7 @@ class RobustAsistenciaProvider extends ChangeNotifier {
   List<AsistenciaDetalle> _asistenciasDetalle = [];
   Map<String, dynamic> _estadisticas = {};
   List<dynamic> _fichas = [];
-  List<WebSocketEvent> _ultimasAsistenciasWS = [];
+  final List<WebSocketEvent> _ultimasAsistenciasWS = [];
   String _jornadaActual = '';
 
   // Estado de carga y errores

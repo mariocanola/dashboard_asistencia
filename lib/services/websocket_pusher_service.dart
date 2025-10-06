@@ -128,7 +128,8 @@ class WebSocketPusherService {
     };
 
     _channel!.sink.add(jsonEncode(subscribeMessage));
-    debugPrint('📡 Suscrito al canal Pusher: $channelName');
+    debugPrint('📡 Enviando suscripción al canal Pusher: $channelName');
+    debugPrint('   Mensaje: $subscribeMessage');
   }
 
   /// Desuscribe de un canal específico
@@ -181,11 +182,25 @@ class WebSocketPusherService {
   /// Maneja mensajes recibidos del WebSocket
   void _handleMessage(dynamic message) {
     try {
+      debugPrint('📩 Mensaje WebSocket RAW recibido');
       final Map<String, dynamic> data = jsonDecode(message.toString());
+      debugPrint('   Tipo: ${data['event']}');
 
       // Manejar eventos de Pusher
       if (data['event'] == 'pusher:connection_established') {
         debugPrint('🔗 Conexión WebSocket Pusher establecida');
+        debugPrint('   Socket ID: ${data['data']?['socket_id'] ?? "N/A"}');
+        return;
+      }
+
+      // Manejar eventos de ping/pong
+      if (data['event'] == 'pusher:ping') {
+        debugPrint('💓 Ping recibido - respondiendo pong');
+        return;
+      }
+
+      if (data['event'] == 'pusher:pong') {
+        debugPrint('💓 Pong recibido');
         return;
       }
 
@@ -196,19 +211,28 @@ class WebSocketPusherService {
         return;
       }
 
+      // Manejar errores de Pusher
+      if (data['event'] == 'pusher:error') {
+        debugPrint('❌ Error Pusher: ${data['data']}');
+        return;
+      }
+
       // Crear evento personalizado
+      debugPrint('⚡ Procesando evento de aplicación...');
       final event = WebSocketEvent.fromJson(data);
 
       if (event.hasValidData) {
         _eventController.add(event);
         _showNotification(event);
         debugPrint(
-            '📨 Evento Pusher recibido: ${event.event} en canal ${event.channel}');
+            '📨 ✅ Evento Pusher recibido y procesado: ${event.event} en canal ${event.channel}');
+        debugPrint('   Timestamp: ${event.timestamp}');
       } else {
         debugPrint('⚠️ Evento Pusher inválido recibido: $data');
       }
     } catch (e) {
       debugPrint('❌ Error al procesar mensaje WebSocket Pusher: $e');
+      debugPrint('   Mensaje: $message');
     }
   }
 
@@ -241,7 +265,7 @@ class WebSocketPusherService {
       Duration(seconds: WebSocketConstants.reconnectDelaySeconds),
       () {
         debugPrint(
-            '🔄 Intentando reconectar WebSocket Pusher... (${_reconnectAttempts}/${WebSocketConstants.maxReconnectAttempts})');
+            '🔄 Intentando reconectar WebSocket Pusher... ($_reconnectAttempts/${WebSocketConstants.maxReconnectAttempts})');
         connect();
       },
     );
@@ -275,6 +299,7 @@ class WebSocketPusherService {
     if (isConnected && _channel != null) {
       final heartbeatMessage = {'event': 'pusher:ping', 'data': {}};
       _channel!.sink.add(jsonEncode(heartbeatMessage));
+      debugPrint('💓 Heartbeat enviado');
     }
   }
 

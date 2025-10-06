@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../providers/hybrid_asistencia_provider.dart';
-import '../models/asistencia_detalle_model.dart';
 import '../models/ficha_estadisticas_model.dart';
 import '../utils/constants.dart';
 

@@ -23,23 +23,28 @@ class UltraFastAsistenciasService {
   bool _isFastPollingActive = false;
 
   // Cache optimizado
-  Map<int, AsistenciaDetalle> _asistenciasCache = {};
-  Set<int> _changedIds = {};
+  final Map<int, AsistenciaDetalle> _asistenciasCache = {};
+  final Set<int> _changedIds = {};
   DateTime? _lastUpdate;
   int _lastCount = 0;
 
-  // Configuración ultra-rápida optimizada para máximo 1 segundo
+  // Configuración ultra-rápida optimizada (timeouts aumentados para estabilidad)
   static const Duration _fastPollingInterval =
-      Duration(milliseconds: 500); // Reducido a 500ms para respuesta más rápida
+      Duration(milliseconds: 1500); // 1.5s para polling más estable
   static const Duration _webSocketTimeout =
-      Duration(seconds: 5); // Reducido a 5s
+      Duration(seconds: 8); // 8s timeout más realista
   static const Duration _healthCheckInterval =
       Duration(seconds: 30); // Health check cada 30s
+  static const Duration _apiTimeout =
+      Duration(seconds: 5); // Timeout de API aumentado a 5s
   // static const int _maxBatchSize = 50; // Procesar máximo 50 cambios por vez
 
   /// Inicializa el servicio ultra-rápido
   Future<void> initialize(AsistenciaProvider provider) async {
     debugPrint('🚀 Iniciando UltraFastAsistenciasService...');
+    debugPrint('   - Polling interval: ${_fastPollingInterval.inMilliseconds}ms');
+    debugPrint('   - API timeout: ${_apiTimeout.inSeconds}s');
+    debugPrint('   - WebSocket timeout: ${_webSocketTimeout.inSeconds}s');
 
     // Inicializar cache
     _initializeCache(provider);
@@ -51,7 +56,7 @@ class UltraFastAsistenciasService {
     _startUltraFastPolling(provider);
 
     debugPrint(
-        '✅ UltraFastAsistenciasService inicializado - Máximo 3s de delay');
+        '✅ UltraFastAsistenciasService inicializado - Actualización cada ${_fastPollingInterval.inSeconds}s');
   }
 
   /// Inicializa el cache con datos actuales
@@ -174,17 +179,17 @@ class UltraFastAsistenciasService {
     debugPrint('⏹️ Polling detenido - WebSocket activo');
   }
 
-  /// Actualización ultra-rápida optimizada para máximo 1 segundo
+  /// Actualización ultra-rápida optimizada (timeout aumentado a 5s para estabilidad)
   Future<void> _fastUpdate(AsistenciaProvider provider) async {
     try {
       final startTime = DateTime.now();
       debugPrint('⚡ Iniciando actualización ultra-rápida...');
 
-      // Actualización con timeout reducido a 1 segundo
+      // Actualización con timeout aumentado a 5 segundos para evitar falsos timeouts
       await provider.cargarAsistencias().timeout(
-        const Duration(seconds: 1),
+        _apiTimeout,
         onTimeout: () {
-          debugPrint('⏰ Timeout en carga de asistencias - usando cache');
+          debugPrint('⏰ Timeout de ${_apiTimeout.inSeconds}s en carga de asistencias - servidor no responde');
         },
       );
 
@@ -203,25 +208,33 @@ class UltraFastAsistenciasService {
         _lastUpdate = DateTime.now();
 
         debugPrint('✅ Actualización ultra-rápida completada en ${updateTime}ms');
+      } else {
+        final updateTime = DateTime.now().difference(startTime).inMilliseconds;
+        debugPrint('ℹ️ No se detectaron cambios (${updateTime}ms)');
       }
     } catch (e) {
       debugPrint('❌ Error en actualización ultra-rápida: $e');
-      // Intentar actualización de respaldo más rápida
+      // Intentar actualización de respaldo
       await _ultraFastBackupUpdate(provider);
     }
   }
 
-  /// Actualización de respaldo ultra-rápida (500ms máximo)
+  /// Actualización de respaldo ultra-rápida (3s máximo)
   Future<void> _ultraFastBackupUpdate(AsistenciaProvider provider) async {
     try {
-      debugPrint('🔄 Ejecutando actualización de respaldo ultra-rápida...');
+      debugPrint('🔄 Ejecutando actualización de respaldo...');
       
-      // Solo cargar asistencias con timeout muy corto
-      await provider.cargarAsistencias().timeout(const Duration(milliseconds: 500));
+      // Solo cargar asistencias con timeout de 3 segundos
+      await provider.cargarAsistencias().timeout(
+        const Duration(seconds: 3),
+        onTimeout: () {
+          debugPrint('⏰ Timeout de respaldo (3s) - servidor muy lento o caído');
+        },
+      );
       
-      debugPrint('✅ Actualización de respaldo ultra-rápida completada');
+      debugPrint('✅ Actualización de respaldo completada');
     } catch (e) {
-      debugPrint('❌ Error en actualización de respaldo ultra-rápida: $e');
+      debugPrint('❌ Error en actualización de respaldo: $e - manteniendo cache');
     }
   }
 
@@ -233,7 +246,7 @@ class UltraFastAsistenciasService {
     // Verificación rápida por cantidad
     if (currentAsistencias.length != _lastCount) {
       debugPrint(
-          '📊 Cambio de cantidad: ${_lastCount} → ${currentAsistencias.length}');
+          '📊 Cambio de cantidad: $_lastCount → ${currentAsistencias.length}');
       _lastCount = currentAsistencias.length;
       return currentAsistencias; // Retornar todas si cambió la cantidad
     }

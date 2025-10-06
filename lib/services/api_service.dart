@@ -7,8 +7,6 @@ import 'package:intl/intl.dart';
 import '../models/asistencia_detalle_model.dart';
 import '../models/estadisticas_model.dart';
 import '../utils/constants.dart';
-import '../models/respuesta_general.dart';
-import '../models/ficha_model.dart';
 
 class ApiService {
   final String baseUrl;

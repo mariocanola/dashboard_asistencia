@@ -73,7 +73,7 @@ class AsistenciaProvider with ChangeNotifier {
                 : 0;
 
     debugPrint(
-        '🔍 Filtrando fichas para jornada ID: $jornadaIdActual (${_jornadaActual})');
+        '🔍 Filtrando fichas para jornada ID: $jornadaIdActual ($_jornadaActual)');
 
     final fichasFiltradas = _fichas.where((f) {
       final fichaJornadaId = f['jornada_id'] ?? 0;

@@ -41,12 +41,18 @@ class HybridRealtimeService {
   // Polling
   Timer? _pollingTimer;
   Timer? _heartbeatTimer;
+  Timer? _inactivityTimer;
   
   // Estado
   bool _isWebSocketActive = false;
   bool _isPollingActive = false;
   DateTime? _lastUpdate;
+  DateTime? _lastWebSocketEvent;
   int _reconnectAttempts = 0;
+  
+  // Configuración de detección de inactividad
+  static const Duration _inactivityThreshold = Duration(seconds: 5);
+  static const Duration _inactivityCheckInterval = Duration(seconds: 3);
   
   // Streams para notificar cambios
   final StreamController<bool> _connectionStateController = StreamController<bool>.broadcast();
@@ -93,6 +99,8 @@ class HybridRealtimeService {
         _setWebSocketActive(true);
         _reconnectAttempts = 0;
         _startHeartbeat();
+        _startInactivityMonitor();
+        _lastWebSocketEvent = DateTime.now();
         debugPrint('✅ WebSocket conectado exitosamente');
       }
     } catch (e) {
@@ -114,19 +122,26 @@ class HybridRealtimeService {
         debugPrint('✅ Pusher: Conexión establecida');
         _setWebSocketActive(true);
         _subscribeToChannels();
+        _lastWebSocketEvent = DateTime.now();
       } else if (eventName == 'pusher:ping') {
         _channel?.sink.add(jsonEncode({'event': 'pusher:pong', 'data': {}}));
       } else if (eventName == 'pusher:pong') {
-        // No hacer nada, es una respuesta al ping
+        // Respuesta al ping - cuenta como actividad
+        _lastWebSocketEvent = DateTime.now();
       } else if (eventName == 'pusher:error') {
         debugPrint('❌ Pusher Error: ${json['data']}');
         _handleWebSocketFailure();
       } else if (eventName == 'pusher:subscription_succeeded') {
         debugPrint('✅ Suscripción exitosa al canal: ${json['channel']}');
+        _lastWebSocketEvent = DateTime.now();
       } else {
         // Es un evento de aplicación - procesar inmediatamente
+        debugPrint('⚡ Evento de aplicación recibido: $eventName');
         final event = WebSocketEvent.fromJsonString(message);
         _eventController.add(event);
+        
+        // Actualizar timestamp de último evento real
+        _lastWebSocketEvent = DateTime.now();
         
         // Actualizar datos inmediatamente (< 1 segundo)
         _updateDataFromWebSocket(event);
@@ -153,28 +168,32 @@ class HybridRealtimeService {
   /// Actualiza datos desde evento WebSocket
   void _updateDataFromWebSocket(WebSocketEvent event) {
     debugPrint('⚡ Actualizando datos desde WebSocket...');
+    debugPrint('   Evento: ${event.event}');
+    debugPrint('   Canal: ${event.channel}');
+    debugPrint('   Timestamp: ${event.timestamp}');
     
     // Notificar actualización inmediata
     _lastUpdate = DateTime.now();
-    debugPrint('✅ Datos actualizados desde WebSocket');
+    _lastWebSocketEvent = DateTime.now();
+    debugPrint('✅ Datos actualizados desde WebSocket en tiempo real');
   }
 
 
-  /// Activa polling cuando WebSocket falla (1 segundo)
+  /// Activa polling cuando WebSocket falla (mejorado a 1.5 segundos para estabilidad)
   void _startPolling() {
     if (_isPollingActive) return; // Evitar múltiples timers
     
     _isPollingActive = true;
     _connectionStateController.add(false); // Notificar que está en polling
     
-    debugPrint('⏳ Iniciando polling cada 1 segundo...');
+    debugPrint('⏳ Iniciando polling cada 1.5 segundos (WebSocket inactivo)...');
     
-    _pollingTimer = Timer.periodic(const Duration(seconds: 1), (_) async {
+    _pollingTimer = Timer.periodic(const Duration(milliseconds: 1500), (_) async {
       await _pollingUpdate();
     });
   }
 
-  /// Actualización por polling optimizada (1 segundo)
+  /// Actualización por polling optimizada (timeout aumentado a 5 segundos)
   Future<void> _pollingUpdate() async {
     try {
       debugPrint('🔄 Polling - Actualizando datos...');
@@ -182,7 +201,13 @@ class HybridRealtimeService {
       final fecha = DateTime.now().toLocal().toString().split(' ')[0];
       final url = '$apiUrl?fecha=$fecha';
       
-      final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 1));
+      final response = await http.get(Uri.parse(url)).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          debugPrint('⏰ Timeout de 5s en polling - servidor no responde a tiempo');
+          throw TimeoutException('Servidor no responde');
+        },
+      );
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -247,6 +272,7 @@ class HybridRealtimeService {
     debugPrint('🔄 WebSocket falló, iniciando polling de fallback...');
     _setWebSocketActive(false);
     _stopHeartbeat();
+    _stopInactivityMonitor();
     _startPolling();
     
     // Intentar reconexión automática con backoff progresivo: 1s, 2s, 5s, 10s (máx 30s)
@@ -274,6 +300,47 @@ class HybridRealtimeService {
     _heartbeatTimer = null;
   }
 
+  /// Inicia el monitor de inactividad del WebSocket
+  void _startInactivityMonitor() {
+    _stopInactivityMonitor();
+    
+    _inactivityTimer = Timer.periodic(_inactivityCheckInterval, (_) {
+      _checkWebSocketInactivity();
+    });
+    
+    debugPrint('👁️ Monitor de inactividad iniciado (verifica cada ${_inactivityCheckInterval.inSeconds}s)');
+  }
+
+  /// Detiene el monitor de inactividad
+  void _stopInactivityMonitor() {
+    _inactivityTimer?.cancel();
+    _inactivityTimer = null;
+  }
+
+  /// Verifica si el WebSocket está inactivo (sin eventos)
+  void _checkWebSocketInactivity() {
+    if (!_isWebSocketActive) return;
+    
+    final now = DateTime.now();
+    if (_lastWebSocketEvent == null) {
+      debugPrint('⚠️ No se ha registrado ningún evento WebSocket aún');
+      return;
+    }
+    
+    final timeSinceLastEvent = now.difference(_lastWebSocketEvent!);
+    
+    if (timeSinceLastEvent > _inactivityThreshold) {
+      debugPrint('⚠️ WebSocket inactivo por ${timeSinceLastEvent.inSeconds}s (umbral: ${_inactivityThreshold.inSeconds}s)');
+      debugPrint('🔄 Activando polling automático debido a inactividad...');
+      
+      // El WebSocket está conectado pero no emite datos - activar polling
+      _setWebSocketActive(false);
+      _startPolling();
+    } else {
+      debugPrint('✅ WebSocket activo - último evento hace ${timeSinceLastEvent.inSeconds}s');
+    }
+  }
+
   /// Reconecta el WebSocket
   Future<void> reconnect() async {
     debugPrint('🔄 Intentando reconectar WebSocket...');
@@ -288,6 +355,7 @@ class HybridRealtimeService {
     
     _stopPolling();
     _stopHeartbeat();
+    _stopInactivityMonitor();
     await _wsSubscription?.cancel();
     await _channel?.sink.close();
     

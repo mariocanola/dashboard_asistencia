@@ -271,7 +271,7 @@ class _OptimizedAsistenciasWidgetState extends State<OptimizedAsistenciasWidget>
               asistencias: entry.value,
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }

@@ -19,7 +19,7 @@ class HybridAsistenciaProvider extends ChangeNotifier {
   List<AsistenciaDetalle> _asistenciasDetalle = [];
   Map<String, dynamic> _estadisticas = {};
   List<dynamic> _fichas = [];
-  List<WebSocketEvent> _ultimasAsistenciasWS = [];
+  final List<WebSocketEvent> _ultimasAsistenciasWS = [];
   String _jornadaActual = '';
 
   // Estado de carga y errores
@@ -32,6 +32,8 @@ class HybridAsistenciaProvider extends ChangeNotifier {
   bool _isWebSocketActive = false;
   bool _isPollingActive = false;
   DateTime? _lastDataUpdate;
+  DateTime? _lastEventReceived;
+  Timer? _inactivityCheckTimer;
 
   // Subscripciones
   StreamSubscription<bool>? _connectionStateSubscription;
@@ -134,6 +136,7 @@ class HybridAsistenciaProvider extends ChangeNotifier {
     _dataSubscription = _hybridService.dataStream.listen((nuevasAsistencias) {
       _asistenciasDetalle = nuevasAsistencias;
       _lastDataUpdate = DateTime.now();
+      _lastEventReceived = DateTime.now();
       debugPrint(
           '📊 Datos actualizados: ${nuevasAsistencias.length} asistencias');
       notifyListeners();
@@ -141,17 +144,50 @@ class HybridAsistenciaProvider extends ChangeNotifier {
 
     // Suscribirse a eventos WebSocket
     _eventSubscription = _hybridService.eventStream.listen((event) {
+      _lastEventReceived = DateTime.now();
+      debugPrint('⚡ EVENTO REAL RECIBIDO: ${event.event} en canal ${event.channel}');
       _procesarEventoWebSocket(event);
     });
+
+    // Iniciar monitor adicional de inactividad en el provider
+    _startProviderInactivityCheck();
 
     // Inicializar servicio híbrido
     _hybridService.initialize();
     debugPrint('✅ Servicio híbrido configurado');
   }
 
+  /// Monitor de inactividad a nivel de provider (adicional al del servicio)
+  void _startProviderInactivityCheck() {
+    _inactivityCheckTimer?.cancel();
+    
+    _inactivityCheckTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      final now = DateTime.now();
+      
+      if (_isWebSocketActive && _lastEventReceived != null) {
+        final timeSinceLastEvent = now.difference(_lastEventReceived!);
+        
+        if (timeSinceLastEvent.inSeconds > 10) {
+          debugPrint('⚠️ Provider: No se han recibido eventos en ${timeSinceLastEvent.inSeconds}s');
+          debugPrint('🔄 Provider: Forzando actualización por inactividad...');
+          
+          // Forzar una actualización desde la API
+          _actualizarDatosDesdeAPI();
+        }
+      }
+    });
+    
+    debugPrint('👁️ Monitor de inactividad del provider iniciado');
+  }
+
   /// Procesa eventos del WebSocket
   void _procesarEventoWebSocket(WebSocketEvent event) {
     debugPrint('📨 Procesando evento WebSocket: ${event.event}');
+    debugPrint('   Aprendiz: ${event.aprendizNombre ?? "N/A"}');
+    debugPrint('   Ficha: ${event.fichaId ?? "N/A"}');
+    debugPrint('   Estado: ${event.estadoAsistencia ?? "N/A"}');
+    
+    _lastEventReceived = DateTime.now();
 
     if (event.isNuevaAsistencia) {
       _procesarNuevaAsistencia(event);
@@ -285,7 +321,7 @@ class HybridAsistenciaProvider extends ChangeNotifier {
 
     final jornadaId = jornadaIdActual;
     debugPrint(
-        '🔍 Filtrando fichas para jornada ID: $jornadaId (${_jornadaActual})');
+        '🔍 Filtrando fichas para jornada ID: $jornadaId ($_jornadaActual)');
 
     // Debug: Mostrar todas las fichas disponibles
     debugPrint('📋 Todas las fichas disponibles:');
@@ -398,6 +434,7 @@ class HybridAsistenciaProvider extends ChangeNotifier {
     _connectionStateSubscription?.cancel();
     _dataSubscription?.cancel();
     _eventSubscription?.cancel();
+    _inactivityCheckTimer?.cancel();
     _hybridService.dispose();
     super.dispose();
   }

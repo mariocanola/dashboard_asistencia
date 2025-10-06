@@ -268,7 +268,7 @@ class _AsistenciasTiempoRealDelDiaWidgetState
               asistencias: entry.value,
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
