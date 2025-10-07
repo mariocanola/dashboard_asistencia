@@ -17,8 +17,8 @@
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowFullscreen">true</item>
         
-        <!-- Fuente personalizada -->
-        <item name="android:fontFamily">@font/roboto</item>
+        <!-- Fuente del sistema (sans-serif) - Roboto se maneja desde Flutter con GoogleFonts -->
+        <item name="android:fontFamily">sans-serif</item>
     </style>
     
     <!-- Theme applied to the Android Window while the process is starting when the OS's Dark Mode setting is off -->

@@ -40,3 +40,21 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Archivos de Android/Gradle
+android/.gradle/
+android/app/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/app/key.properties
+android/app/upload-keystore.jks
+android/app/release-keystore.jks
+android/.idea/
+android/gradle.properties.bak
+android/app/proguard-rules.pro.bak
+
+# Archivos de firma (NUNCA committear)
+*.jks
+*.keystore
+key.properties
