@@ -7,8 +7,6 @@ import 'package:intl/intl.dart';
 import '../models/asistencia_detalle_model.dart';
 import '../models/estadisticas_model.dart';
 import '../utils/constants.dart';
-import '../models/respuesta_general.dart';
-import '../models/ficha_model.dart';
 
 class ApiService {
   final String baseUrl;
@@ -53,9 +51,11 @@ class ApiService {
       final Map<String, dynamic> data = _decodeResponse(response);
 
       debugPrint('✅ Asistencias obtenidas: ${data['total_asistencias'] ?? 0}');
-      debugPrint('📊 Total asistencias en lista: ${(data['asistencias'] as List?)?.length ?? 0}');
-      debugPrint('📊 Jornadas encontradas: ${(data['por_jornada'] as Map?)?.keys.toList() ?? []}');
-      
+      debugPrint(
+          '📊 Total asistencias en lista: ${(data['asistencias'] as List?)?.length ?? 0}');
+      debugPrint(
+          '📊 Jornadas encontradas: ${(data['por_jornada'] as Map?)?.keys.toList() ?? []}');
+
       // Debug detallado del JSON recibido
       debugPrint('🔍 JSON completo recibido: ${jsonEncode(data)}');
 
@@ -81,11 +81,13 @@ class ApiService {
 
         // Obtener el total real de aprendices de la jornada
         // Esto debería venir del endpoint de jornada que devuelve el total de aprendices
-        final totalAprendices = _getTotalAprendicesJornada(jornada, asistencias);
+        final totalAprendices =
+            _getTotalAprendicesJornada(jornada, asistencias);
 
         estadisticas[jornada] = EstadisticasJornada(
           jornada: jornada,
-          totalAprendices: totalAprendices, // Total real de aprendices de la jornada
+          totalAprendices:
+              totalAprendices, // Total real de aprendices de la jornada
           totalPresentes: presentes,
           programas: [], // Agrupar por programas si es necesario
         );
@@ -99,36 +101,56 @@ class ApiService {
   }
 
   /// Obtiene el total real de aprendices de una jornada
-  /// Por ahora usa un valor fijo basado en la jornada, pero esto debería venir del backend
-  int _getTotalAprendicesJornada(String jornada, List<AsistenciaDetalle> asistencias) {
-    // TODO: Esto debería venir del endpoint de jornada que devuelve el total de aprendices
-    // Por ahora, para la jornada MAÑANA usamos 28 como valor conocido
-    // En el futuro, esto debería ser una llamada al backend
-    
-    switch (jornada.toUpperCase()) {
-      case 'MAÑANA':
-        return 28; // Valor real de aprendices en la jornada MAÑANA
-      case 'TARDE':
-        return 25; // Valor estimado para TARDE
-      case 'NOCHE':
-        return 20; // Valor estimado para NOCHE
-      default:
-        // Fallback: usar el número de asistencias si no se conoce el total
-        return asistencias.length;
-    }
+  /// USA SOLO LOS DATOS DEL ENDPOINT - NO VALORES FIJOS
+  int _getTotalAprendicesJornada(
+      String jornada, List<AsistenciaDetalle> asistencias) {
+    // Usar SOLO los datos que vienen del endpoint
+    // Contar aprendices únicos reales de las asistencias
+    final aprendicesUnicos = asistencias.map((a) => a.aprendiz).toSet().length;
+    debugPrint('🔍 Total aprendices únicos del endpoint: $aprendicesUnicos');
+    return aprendicesUnicos;
   }
 
   /// Obtiene las fichas de caracterización
-  Future<List<FichaModel>> getFichas() async {
-    final response = await _get('${ApiConstants.fichas}/all');
-    final Map<String, dynamic> data = _decodeResponse(response);
-    final respuesta = RespuestaGeneral.fromJson(data);
-    return respuesta.data;
+  /// Maneja errores 401/403 sin romper la UI
+  Future<List<Map<String, dynamic>>> getFichas() async {
+    try {
+      debugPrint('🔍 Consultando fichas desde: ${ApiConstants.fichas}');
+      final response = await _get(ApiConstants.fichas, requireAuth: false);
+      final Map<String, dynamic> data = _decodeResponse(response);
+
+      debugPrint(
+          '✅ Respuesta fichas recibida: ${data['success']}, total: ${data['total']}');
+
+      // Manejar la respuesta del endpoint real
+      if (data['success'] == true && data['data'] is List) {
+        final List<dynamic> fichasData = data['data'];
+        // Devolver los datos como Map para compatibilidad con el provider
+        debugPrint('✅ Fichas procesadas: ${fichasData.length} fichas');
+        return fichasData.cast<
+            Map<String, dynamic>>(); // Convertir a List<Map<String, dynamic>>
+      } else {
+        debugPrint('❌ Respuesta de fichas inválida');
+        return [];
+      }
+    } catch (e) {
+      // Si es error de autenticación (401/403), no logar error repetitivo
+      if (e.toString().contains('401') || e.toString().contains('403')) {
+        debugPrint(
+            '🔒 Acceso a fichas requiere autenticación - mostrando placeholder');
+        return []; // Retornar lista vacía para mostrar placeholder
+      } else {
+        // Para otros errores, logar normalmente
+        debugPrint('❌ Error al cargar fichas: $e');
+        return [];
+      }
+    }
   }
 
   /// Obtiene la cantidad de aprendices por ficha
   Future<int> getCantidadAprendicesPorFicha(int fichaId) async {
-    final response = await _get('${ApiConstants.aprendicesPorFicha}/$fichaId');
+    final response = await _get('${ApiConstants.aprendicesPorFicha}/$fichaId',
+        requireAuth: true);
     final Map<String, dynamic> data = _decodeResponse(response);
     return data['cantidad_aprendices'] ?? 0;
   }
@@ -141,12 +163,14 @@ class ApiService {
   // --- Métodos privados auxiliares ---
 
   /// Realiza una petición GET a la API
-  Future<http.Response> _get(String endpoint) async {
+  Future<http.Response> _get(String endpoint,
+      {bool requireAuth = false}) async {
     final url = Uri.parse('$baseUrl$endpoint');
     try {
       final response = await httpClient
-          .get(url, headers: _headers())
-          .timeout(const Duration(seconds: 10)); // Timeout más razonable para el servidor
+          .get(url, headers: _headers(requireAuth: requireAuth))
+          .timeout(const Duration(
+              seconds: 10)); // Timeout más razonable para el servidor
       _checkStatusCode(response);
       return response;
     } on TimeoutException {
@@ -198,5 +222,16 @@ class ApiService {
   }
 
   /// Construye los headers para las peticiones
-  Map<String, String> _headers() => {'Content-Type': 'application/json'};
+  Map<String, String> _headers({bool requireAuth = false}) {
+    final headers = {'Content-Type': 'application/json'};
+
+    // Agregar token de autenticación si es requerido
+    if (requireAuth) {
+      // TODO: Implementar sistema de autenticación real
+      // Por ahora usar un token temporal para pruebas
+      headers['Authorization'] = 'Bearer temp_token_for_testing';
+    }
+
+    return headers;
+  }
 }

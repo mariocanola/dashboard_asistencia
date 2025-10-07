@@ -6,6 +6,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'providers/asistencia_provider.dart';
 import 'providers/reactive_asistencia_provider.dart';
+import 'providers/hybrid_asistencia_provider.dart';
 import 'services/api_service.dart';
 import 'screens/dashboard_screen.dart';
 import 'utils/constants.dart';
@@ -23,6 +24,11 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
+                    // Provider híbrido como principal
+                    ChangeNotifierProvider(
+                      create: (_) => HybridAsistenciaProvider(apiService: apiService),
+                    ),
+        // Providers originales para compatibilidad
         ChangeNotifierProvider(
           create: (_) => AsistenciaProvider(apiService: apiService),
         ),

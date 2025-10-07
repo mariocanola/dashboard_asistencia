@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../providers/asistencia_provider.dart';
+import '../providers/hybrid_asistencia_provider.dart';
 import '../models/asistencia_detalle_model.dart';
-import '../services/ultra_fast_asistencias_service.dart';
+// import '../services/ultra_fast_asistencias_service.dart';
 
 /// Widget optimizado para mostrar estadísticas generales con actualización automática
 /// Responde en máximo 3 segundos a eventos de NuevaAsistenciaRegistrada
@@ -13,12 +13,12 @@ class EstadisticasGeneralesWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AsistenciaProvider>(
+    return Consumer<HybridAsistenciaProvider>(
       builder: (context, provider, _) {
         final asistencias = provider.asistenciasDetalle;
         
         // Calcular estadísticas en tiempo real
-        final stats = _calculateStats(asistencias);
+        final stats = _calculateStats(asistencias, provider);
         
         return _buildStatsContainer(stats);
       },
@@ -26,7 +26,7 @@ class EstadisticasGeneralesWidget extends StatelessWidget {
   }
 
   /// Calcula las estadísticas en tiempo real
-  Map<String, dynamic> _calculateStats(List<AsistenciaDetalle> asistencias) {
+  Map<String, dynamic> _calculateStats(List<AsistenciaDetalle> asistencias, HybridAsistenciaProvider provider) {
     // Agrupar por ficha
     final Map<String, List<AsistenciaDetalle>> porFicha = {};
     for (var asistencia in asistencias) {
@@ -47,9 +47,8 @@ class EstadisticasGeneralesWidget extends StatelessWidget {
       if (tieneCompletas) fichasCompletas++;
     }
 
-    // Obtener tiempo de respuesta del servicio ultra-rápido
-    final ultraFastService = UltraFastAsistenciasService();
-    final responseTime = ultraFastService.getResponseTime();
+    // Obtener tiempo de respuesta del servicio híbrido
+    final responseTime = provider.isWebSocketActive ? '< 1s' : '2s';
 
     return {
       'totalFichas': totalFichas,

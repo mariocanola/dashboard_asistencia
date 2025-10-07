@@ -1,14 +1,11 @@
 import 'package:flutter/foundation.dart';
 import '../models/websocket_event.dart';
-import '../services/websocket_pusher_service.dart';
 
 /// Helper para probar eventos WebSocket sin necesidad del servidor real
 class WebSocketTestHelper {
   static final WebSocketTestHelper _instance = WebSocketTestHelper._internal();
   factory WebSocketTestHelper() => _instance;
   WebSocketTestHelper._internal();
-
-  final WebSocketPusherService _webSocketService = WebSocketPusherService();
 
   /// Simula un evento de nueva asistencia para pruebas
   void simulateNewAttendance({
@@ -31,7 +28,7 @@ class WebSocketTestHelper {
     );
 
     debugPrint('🧪 Simulando evento WebSocket: $aprendizNombre - $fichaId');
-    
+
     // Emitir el evento directamente al stream
     _emitTestEvent(event);
   }
@@ -55,8 +52,9 @@ class WebSocketTestHelper {
       },
     );
 
-    debugPrint('🧪 Simulando actualización WebSocket: $aprendizNombre - Salida');
-    
+    debugPrint(
+        '🧪 Simulando actualización WebSocket: $aprendizNombre - Salida');
+
     // Emitir el evento directamente al stream
     _emitTestEvent(event);
   }
@@ -67,7 +65,7 @@ class WebSocketTestHelper {
     // Esto simula que el evento llegó del servidor
     try {
       debugPrint('📡 Evento de prueba emitido: ${event.aprendizNombre}');
-      
+
       // Por ahora, solo logueamos el evento ya que necesitamos acceso al provider
       // para emitir correctamente al stream
       debugPrint('📊 Datos del evento: ${event.data}');

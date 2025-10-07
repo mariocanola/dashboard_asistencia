@@ -3,12 +3,13 @@ import 'package:provider/provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 
-import '../providers/asistencia_provider.dart';
+import '../providers/hybrid_asistencia_provider.dart';
 import '../widgets/dashboard_header.dart';
 import '../widgets/ultra_fast_asistencias_widget.dart';
 import '../widgets/fichas_en_formacion_widget.dart';
 import '../widgets/metrics_cards_widget.dart';
 import '../widgets/main_kpi_card_widget.dart';
+import '../widgets/hybrid_connection_status_widget.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -22,7 +23,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = context.read<AsistenciaProvider>();
+      final provider = context.read<HybridAsistenciaProvider>();
       provider.cargarDatos();
     });
   }
@@ -117,7 +118,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ? 1
                         : 1;
 
-    final provider = Provider.of<AsistenciaProvider>(context);
+    final provider = Provider.of<HybridAsistenciaProvider>(context);
 
     // Debug: Mostrar información básica
     debugPrint('🔍 Dashboard - Jornada actual: ${provider.jornadaActual}');
@@ -133,7 +134,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF1F5F9),
-      body: Consumer<AsistenciaProvider>(
+      body: Consumer<HybridAsistenciaProvider>(
         builder: (context, providerConsumer, _) {
           // Mostrar estado de carga o error
           if (providerConsumer.isLoading &&
@@ -356,6 +357,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       jornada: jornadaActual,
                                       isUpdating: providerConsumer.isUpdating,
                                     ),
+                                    SizedBox(height: 8.h),
+
+                                    // Estado de conexión híbrida
+                                    const HybridConnectionStatusWidget(),
                                     SizedBox(height: basePadding),
 
                                     // KPI Principal - Porcentaje de Asistencia (Hero)
@@ -475,7 +480,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required String fechaActual,
     required String horaActual,
     required String jornadaActual,
-    required AsistenciaProvider providerConsumer,
+    required HybridAsistenciaProvider providerConsumer,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -487,6 +492,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           jornada: jornadaActual,
           isUpdating: providerConsumer.isUpdating,
         ),
+        SizedBox(height: 8.h),
+
+        // Estado de conexión híbrida
+        const HybridConnectionStatusWidget(),
         SizedBox(height: basePadding),
 
         // KPI Principal - Porcentaje de Asistencia (Hero)

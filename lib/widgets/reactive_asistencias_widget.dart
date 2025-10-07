@@ -265,7 +265,7 @@ class _ReactiveAsistenciasWidgetState extends State<ReactiveAsistenciasWidget> {
               reactiveService: reactiveService,
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }

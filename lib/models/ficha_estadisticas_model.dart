@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'asistencia_detalle_model.dart';
 
 /// Modelo que representa las estadísticas de una ficha
 class FichaEstadisticas {
@@ -23,7 +24,7 @@ class FichaEstadisticas {
   /// Crea estadísticas de ficha a partir de una lista de asistencias
   factory FichaEstadisticas.fromAsistencias({
     required String ficha,
-    required List<dynamic> asistencias,
+    required List<AsistenciaDetalle> asistencias,
   }) {
     // Contar aprendices únicos, no registros de asistencia
     final aprendicesUnicos = asistencias.map((a) => a.aprendiz).toSet().length;

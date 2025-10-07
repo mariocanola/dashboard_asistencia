@@ -287,7 +287,7 @@ class _RealtimeAsistenciasWidgetState extends State<RealtimeAsistenciasWidget> {
               asistencias: entry.value,
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }

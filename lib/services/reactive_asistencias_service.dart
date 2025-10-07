@@ -281,7 +281,9 @@ class ReactiveAsistenciasService {
     _asistenciaActualizadaController.close();
     _nuevaAsistenciaController.close();
 
-    _jornadaControllers.values.forEach((controller) => controller.close());
+    for (var controller in _jornadaControllers.values) {
+      controller.close();
+    }
     _jornadaControllers.clear();
 
     _isInitialized = false;

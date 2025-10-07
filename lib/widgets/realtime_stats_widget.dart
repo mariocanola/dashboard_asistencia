@@ -125,7 +125,7 @@ class RealtimeStatsWidget extends StatelessWidget {
                       ),
                     ),
                     // Barra de progreso
-                    Container(
+                    SizedBox(
                       width: 60.w,
                       height: 60.w,
                       child: Stack(

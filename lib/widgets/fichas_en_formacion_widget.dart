@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../providers/asistencia_provider.dart';
-import '../models/asistencia_detalle_model.dart';
+import '../providers/hybrid_asistencia_provider.dart';
 import '../models/ficha_estadisticas_model.dart';
 import '../utils/constants.dart';
 
@@ -13,34 +12,41 @@ class FichasEnFormacionWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AsistenciaProvider>(
+    return Consumer<HybridAsistenciaProvider>(
       builder: (context, provider, _) {
         final asistencias = provider.asistenciasDetalle;
+        final fichasJornadaActual = provider.fichasJornadaActual;
 
         if (provider.isLoading && asistencias.isEmpty) {
           return _buildLoadingState();
         }
 
-        if (asistencias.isEmpty) {
-          return _buildEmptyState();
+        // Si no hay fichas para la jornada actual, mostrar fichas disponibles
+        if (fichasJornadaActual.isEmpty) {
+          return _buildNoFichasForJornada(
+              provider.jornadaActual, provider.fichas);
         }
 
-        // Agrupar asistencias por ficha
-        final Map<String, List<AsistenciaDetalle>> porFicha = {};
-        for (var asistencia in asistencias) {
-          if (!porFicha.containsKey(asistencia.ficha)) {
-            porFicha[asistencia.ficha] = [];
-          }
-          porFicha[asistencia.ficha]!.add(asistencia);
-        }
+        // NO mostrar estado vacío si hay fichas de la jornada
+        // Las fichas se mostrarán aunque no tengan asistencias
 
-        // Crear estadísticas para cada ficha
+        // Crear estadísticas para TODAS las fichas de la jornada actual
+        // Incluso las que no tienen asistencias (mostrarán 0 asistencias)
         final List<FichaEstadisticas> estadisticasFichas = [];
-        for (var entry in porFicha.entries) {
+        
+        for (var ficha in fichasJornadaActual) {
+          final fichaNumero = ficha['ficha'].toString();
+          
+          // Buscar asistencias para esta ficha específica
+          final asistenciasDeEstaFicha = asistencias
+              .where((a) => a.ficha == fichaNumero)
+              .toList();
+          
+          // Crear estadísticas (puede ser con 0 asistencias)
           estadisticasFichas.add(
             FichaEstadisticas.fromAsistencias(
-              ficha: entry.key,
-              asistencias: entry.value,
+              ficha: fichaNumero,
+              asistencias: asistenciasDeEstaFicha, // Puede estar vacía
             ),
           );
         }
@@ -141,10 +147,119 @@ class FichasEnFormacionWidget extends StatelessWidget {
     );
   }
 
+  /// Widget cuando no hay fichas para la jornada actual
+  Widget _buildNoFichasForJornada(
+      String jornadaActual, List<dynamic> todasLasFichas) {
+    return Container(
+      padding: EdgeInsets.all(24.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: const Color(0xFFF59E0B)),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.info_outline_rounded,
+            size: 32.w,
+            color: const Color(0xFFF59E0B),
+          ),
+          SizedBox(height: 12.h),
+          Text(
+            'No hay fichas en $jornadaActual',
+            style: TextStyle(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF92400E),
+            ),
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            'Fichas disponibles en el sistema:',
+            style: TextStyle(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF92400E),
+            ),
+          ),
+          SizedBox(height: 8.h),
+          ...todasLasFichas.map((ficha) {
+            final jornadaId = ficha['jornada_id'] ?? 0;
+            final jornadaNombre = jornadaId == 1
+                ? 'MAÑANA'
+                : jornadaId == 2
+                    ? 'TARDE'
+                    : jornadaId == 3
+                        ? 'NOCHE'
+                        : 'DESCONOCIDA';
+            return Container(
+              margin: EdgeInsets.only(bottom: 4.h),
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF59E0B).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              child: Text(
+                'Ficha ${ficha['ficha']} - $jornadaNombre',
+                style: TextStyle(
+                  fontSize: 11.sp,
+                  color: const Color(0xFF92400E),
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  /// Widget de estado que requiere autenticación
+  Widget _buildAuthRequiredState() {
+    return Container(
+      padding: EdgeInsets.all(24.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: const Color(0xFFF59E0B)),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.lock_outline_rounded,
+              size: 32.w,
+              color: const Color(0xFFF59E0B),
+            ),
+            SizedBox(height: 12.h),
+            Text(
+              'Requiere autenticación',
+              style: TextStyle(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF92400E),
+              ),
+            ),
+            SizedBox(height: 4.h),
+            Text(
+              'Las fichas en formación requieren credenciales de acceso',
+              style: TextStyle(
+                fontSize: 12.sp,
+                color: const Color(0xFF92400E),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// Widget de resumen compacto de fichas
   Widget _buildResumenFichas(List<FichaEstadisticas> fichas) {
     final totalFichas = fichas.length;
-    final fichasActivas = fichas.where((f) => f.estadoGeneral != 'SIN DATOS').length;
+    final fichasActivas =
+        fichas.where((f) => f.estadoGeneral != 'SIN DATOS').length;
     final totalAprendices = fichas.fold(0, (sum, f) => sum + f.totalAprendices);
 
     return Container(

@@ -11,7 +11,7 @@ class SummaryCard extends StatelessWidget {
   final BorderRadius? borderRadius;
 
   const SummaryCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.value,
     required this.icon,
@@ -19,7 +19,7 @@ class SummaryCard extends StatelessWidget {
     this.width,
     this.height,
     this.borderRadius,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

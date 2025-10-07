@@ -10,12 +10,12 @@ class SummaryCards extends StatelessWidget {
   final int porcentajeAsistencia;
 
   const SummaryCards({
-    Key? key,
+    super.key,
     required this.totalFichas,
     required this.totalPresentes,
     required this.totalAusentes,
     required this.porcentajeAsistencia,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
