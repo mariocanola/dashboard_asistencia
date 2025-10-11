@@ -33,15 +33,14 @@ class FichasEnFormacionWidget extends StatelessWidget {
         // Crear estadísticas para TODAS las fichas de la jornada actual
         // Incluso las que no tienen asistencias (mostrarán 0 asistencias)
         final List<FichaEstadisticas> estadisticasFichas = [];
-        
+
         for (var ficha in fichasJornadaActual) {
           final fichaNumero = ficha['ficha'].toString();
-          
+
           // Buscar asistencias para esta ficha específica
-          final asistenciasDeEstaFicha = asistencias
-              .where((a) => a.ficha == fichaNumero)
-              .toList();
-          
+          final asistenciasDeEstaFicha =
+              asistencias.where((a) => a.ficha == fichaNumero).toList();
+
           // Crear estadísticas (puede ser con 0 asistencias)
           estadisticasFichas.add(
             FichaEstadisticas.fromAsistencias(
@@ -306,7 +305,7 @@ class FichasEnFormacionWidget extends StatelessWidget {
           Expanded(
             child: _buildStatItem(
               icon: Icons.check_circle_rounded,
-              label: 'Activas',
+              label: 'Con Asistencias Registradas',
               value: fichasActivas.toString(),
             ),
           ),
