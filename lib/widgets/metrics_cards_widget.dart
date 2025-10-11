@@ -6,59 +6,28 @@ import '../providers/hybrid_asistencia_provider.dart';
 
 /// Widget optimizado para mostrar las tarjetas de métricas
 /// Solo se reconstruye cuando cambian los datos específicos de las métricas
+/// Consume datos pre-calculados del HybridAsistenciaProvider
 class MetricsCardsWidget extends StatelessWidget {
   final double baseFontSize;
-  final String jornadaActual;
 
   const MetricsCardsWidget({
     super.key,
     required this.baseFontSize,
-    required this.jornadaActual,
   });
 
   @override
   Widget build(BuildContext context) {
     return Consumer<HybridAsistenciaProvider>(
       builder: (context, provider, _) {
-        // Calcular métricas basadas en datos reales disponibles
-        final asistenciasDetalle = provider.asistenciasDetalle;
-        
-        // Debug: Mostrar información de las asistencias
-        debugPrint('🔄 MetricsCards - Recalculando métricas: ${asistenciasDetalle.length} asistencias');
+        // Obtener métricas pre-calculadas del provider
+        final totalFichas = provider.totalFichas;
+        final totalPresentes = provider.presentes;
+        final totalAusentes = provider.ausentes;
+        final jornada = provider.jornadaActual;
 
-        // Calcular fichas únicas desde las asistencias
-        final fichasUnicas = asistenciasDetalle.map((a) => a.ficha).toSet();
-        final totalFichas = fichasUnicas.length;
-        
-        // Calcular aprendices únicos totales desde asistenciasDetalle (datos reales del endpoint)
-        final aprendicesUnicos = asistenciasDetalle.map((a) => a.aprendiz).toSet();
-        final totalAprendicesEsperados = aprendicesUnicos.length;
-        
-        // Calcular presentes basado en estados reales del endpoint
-        final presentesUnicos = asistenciasDetalle
-            .where((a) => a.estado == 'en_curso' || a.estado == 'completa')
-            .map((a) => a.aprendiz)
-            .toSet();
-        final totalPresentes = presentesUnicos.length;
-        
-        // Calcular ausentes basado en estados reales del endpoint
-        final ausentesUnicos = asistenciasDetalle
-            .where((a) => a.estado == 'ausente' || a.estado == 'falta')
-            .map((a) => a.aprendiz)
-            .toSet();
-        final totalAusentes = ausentesUnicos.length;
-        
-        // Calcular porcentaje de asistencia
-        final porcentajeAsistencia = totalAprendicesEsperados > 0
-            ? (totalPresentes / totalAprendicesEsperados * 100).round()
-            : 0;
-
-        // Debug detallado de estados
-        final estadosUnicos = asistenciasDetalle.map((a) => a.estado).toSet();
-        debugPrint('🔍 Estados únicos encontrados: $estadosUnicos');
-        
+        // Debug: Mostrar métricas actualizadas
         debugPrint(
-          '🔄 MetricsCards - Total fichas: $totalFichas, Esperados: $totalAprendicesEsperados, Presentes: $totalPresentes, Ausentes: $totalAusentes, %: $porcentajeAsistencia%',
+          '📊 MetricsCards - Fichas: $totalFichas | Presentes: $totalPresentes | Ausentes: $totalAusentes | Jornada: $jornada',
         );
 
         return Row(
@@ -100,7 +69,7 @@ class MetricsCardsWidget extends StatelessWidget {
               child: _buildMetricCard(
                 context: context,
                 title: 'Jornada',
-                value: jornadaActual,
+                value: jornada,
                 icon: Icons.schedule_rounded,
                 color: const Color(0xFF8B5CF6),
                 baseFontSize: baseFontSize,

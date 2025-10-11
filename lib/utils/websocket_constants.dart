@@ -1,7 +1,7 @@
 /// Constantes para la configuración de WebSocket
 class WebSocketConstants {
   /// Configuración del servidor WebSocket
-  static const String host = '192.168.1.2';
+  static const String host = '192.168.1.4';
   static const int port = 8080;
   static const String cluster = 'mt1';
   static const String key = 'local';

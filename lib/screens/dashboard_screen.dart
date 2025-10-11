@@ -371,7 +371,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     // Métricas Complementarias (optimizadas para WebSocket)
                                     MetricsCardsWidget(
                                       baseFontSize: baseFontSize,
-                                      jornadaActual: jornadaActual,
                                     ),
                                     SizedBox(height: basePadding),
 
@@ -613,7 +612,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         // Métricas Complementarias (optimizadas para WebSocket)
         MetricsCardsWidget(
           baseFontSize: baseFontSize,
-          jornadaActual: jornadaActual,
         ),
         SizedBox(height: basePadding),
 

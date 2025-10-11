@@ -58,24 +58,77 @@ class HybridAsistenciaProvider extends ChangeNotifier {
 
   // Propiedades adicionales para compatibilidad con el dashboard
   double? get kpiAsistenciaPorcentaje {
-    if (_asistenciasDetalle.isEmpty) return null;
+    // Si no hay fichas o asistencias, no se puede calcular
+    if (_fichas.isEmpty) return null;
 
-    // Contar aprendices únicos, no registros de asistencia
-    final aprendicesUnicos =
-        _asistenciasDetalle.map((a) => a.aprendiz).toSet().length;
+    // Calcular total de aprendices según las fichas de la jornada actual
+    final fichasJornada = fichasJornadaActual;
+    final totalAprendicesJornada = fichasJornada.fold<int>(
+      0,
+      (sum, ficha) {
+        final total = ficha['total_aprendices'] ?? 0;
+        return sum +
+            (total is int ? total : int.tryParse(total.toString()) ?? 0);
+      },
+    );
+
+    if (totalAprendicesJornada == 0) return 0.0;
+
+    // Calcular presentes (sin duplicar aprendices)
     final presentesUnicos = _asistenciasDetalle
         .where((a) => a.estado == 'en_curso' || a.estado == 'completa')
         .map((a) => a.aprendiz)
         .toSet()
         .length;
 
-    debugPrint(
-        '🔍 KPI - Aprendices únicos: $aprendicesUnicos, Presentes únicos: $presentesUnicos');
+    final porcentaje = (presentesUnicos / totalAprendicesJornada) * 100;
 
-    if (aprendicesUnicos == 0) return 0.0;
-    final porcentaje = (presentesUnicos / aprendicesUnicos) * 100;
-    debugPrint('🔍 KPI - Porcentaje calculado: $porcentaje%');
+    debugPrint(
+        '📈 KPI Preciso - ${presentesUnicos}/${totalAprendicesJornada} aprendices presentes (${porcentaje.toStringAsFixed(2)}%)');
+
     return porcentaje;
+  }
+
+  /// Total de fichas en la jornada actual
+  int get totalFichas {
+    return fichasJornadaActual.length;
+  }
+
+  /// Total de aprendices presentes (con estado 'en_curso' o 'completa')
+  int get presentes {
+    if (_asistenciasDetalle.isEmpty) return 0;
+    return _asistenciasDetalle
+        .where((a) => a.estado == 'en_curso' || a.estado == 'completa')
+        .map((a) => a.aprendiz)
+        .toSet()
+        .length;
+  }
+
+  /// Total de aprendices ausentes = total esperados - presentes
+  int get ausentes {
+    if (_fichas.isEmpty) return 0;
+
+    int totalAprendicesJornada = 0;
+    for (var ficha in fichasJornadaActual) {
+      final total = ficha['total_aprendices'] ?? 0;
+      totalAprendicesJornada +=
+          total is int ? total : int.tryParse(total.toString()) ?? 0;
+    }
+
+    final totalAusentes = totalAprendicesJornada - presentes;
+    return totalAusentes.clamp(0, totalAprendicesJornada);
+  }
+
+  /// Total de aprendices esperados (suma de todas las fichas)
+  int get totalAprendices {
+    if (_fichas.isEmpty) return 0;
+
+    int total = 0;
+    for (var ficha in fichasJornadaActual) {
+      final valor = ficha['total_aprendices'] ?? 0;
+      total += valor is int ? valor : int.tryParse(valor.toString()) ?? 0;
+    }
+    return total;
   }
 
   HybridAsistenciaProvider({required ApiService apiService})
@@ -145,7 +198,8 @@ class HybridAsistenciaProvider extends ChangeNotifier {
     // Suscribirse a eventos WebSocket
     _eventSubscription = _hybridService.eventStream.listen((event) {
       _lastEventReceived = DateTime.now();
-      debugPrint('⚡ EVENTO REAL RECIBIDO: ${event.event} en canal ${event.channel}');
+      debugPrint(
+          '⚡ EVENTO REAL RECIBIDO: ${event.event} en canal ${event.channel}');
       _procesarEventoWebSocket(event);
     });
 
@@ -160,23 +214,24 @@ class HybridAsistenciaProvider extends ChangeNotifier {
   /// Monitor de inactividad a nivel de provider (adicional al del servicio)
   void _startProviderInactivityCheck() {
     _inactivityCheckTimer?.cancel();
-    
+
     _inactivityCheckTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       final now = DateTime.now();
-      
+
       if (_isWebSocketActive && _lastEventReceived != null) {
         final timeSinceLastEvent = now.difference(_lastEventReceived!);
-        
+
         if (timeSinceLastEvent.inSeconds > 10) {
-          debugPrint('⚠️ Provider: No se han recibido eventos en ${timeSinceLastEvent.inSeconds}s');
+          debugPrint(
+              '⚠️ Provider: No se han recibido eventos en ${timeSinceLastEvent.inSeconds}s');
           debugPrint('🔄 Provider: Forzando actualización por inactividad...');
-          
+
           // Forzar una actualización desde la API
           _actualizarDatosDesdeAPI();
         }
       }
     });
-    
+
     debugPrint('👁️ Monitor de inactividad del provider iniciado');
   }
 
@@ -186,7 +241,7 @@ class HybridAsistenciaProvider extends ChangeNotifier {
     debugPrint('   Aprendiz: ${event.aprendizNombre ?? "N/A"}');
     debugPrint('   Ficha: ${event.fichaId ?? "N/A"}');
     debugPrint('   Estado: ${event.estadoAsistencia ?? "N/A"}');
-    
+
     _lastEventReceived = DateTime.now();
 
     if (event.isNuevaAsistencia) {
@@ -379,14 +434,14 @@ class HybridAsistenciaProvider extends ChangeNotifier {
     }
   }
 
-  /// Carga fichas desde el API
+  /// Carga fichas desde el API (con total de aprendices por ficha)
   Future<void> _cargarFichas() async {
     try {
-      debugPrint('🔍 Intentando cargar fichas desde API...');
-      _fichas = await _apiService.getFichas();
-      debugPrint('✅ Fichas cargadas: ${_fichas.length} fichas');
+      debugPrint('🔍 Cargando fichas con aprendices desde API...');
+      _fichas = await _apiService.getFichasConAprendices();
+      debugPrint('✅ Fichas cargadas: ${_fichas.length} fichas con aprendices');
     } catch (e) {
-      debugPrint('❌ Error al cargar fichas: $e');
+      debugPrint('❌ Error al cargar fichas con aprendices: $e');
       _fichas = [];
     }
   }

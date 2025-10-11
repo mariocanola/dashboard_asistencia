@@ -18,6 +18,7 @@ class RealtimeAsistenciasService {
   Timer? _pollingTimer;
   bool _isWebSocketConnected = false;
   bool _isPollingActive = false;
+  bool _isUpdating = false;
   DateTime? _lastUpdate;
   List<AsistenciaDetalle> _lastKnownAsistencias = [];
 
@@ -121,6 +122,14 @@ class RealtimeAsistenciasService {
 
   /// Actualiza los datos
   Future<void> _refreshData(AsistenciaProvider provider) async {
+    // Protección contra llamadas superpuestas
+    if (_isUpdating) {
+      debugPrint('⏸️ Actualización ya en curso, omitiendo...');
+      return;
+    }
+    
+    _isUpdating = true;
+    
     try {
       final now = DateTime.now();
       
@@ -136,36 +145,52 @@ class RealtimeAsistenciasService {
       await provider.cargarAsistencias();
       final currentAsistencias = provider.asistenciasDetalle;
       
-      // Verificar si hay cambios
+      // Verificar si hay cambios reales
       if (_hasChanges(currentAsistencias)) {
         debugPrint('📊 Cambios detectados: ${currentAsistencias.length} asistencias');
         _lastKnownAsistencias = List.from(currentAsistencias);
         _lastUpdate = now;
         
         // Notificar cambios - el provider ya se notifica automáticamente
+      } else {
+        debugPrint('ℹ️ Sin cambios reales en los datos');
       }
       
     } catch (e) {
       debugPrint('❌ Error actualizando datos: $e');
+    } finally {
+      _isUpdating = false;
     }
   }
 
-  /// Verifica si hay cambios en las asistencias
+  /// Verifica si hay cambios reales en las asistencias
+  /// Usa comparación por ID en lugar de por índice para evitar falsos positivos
   bool _hasChanges(List<AsistenciaDetalle> currentAsistencias) {
+    // Si cambia la cantidad, definitivamente hay cambios
     if (_lastKnownAsistencias.length != currentAsistencias.length) {
+      debugPrint('🔄 Cambio de cantidad: ${_lastKnownAsistencias.length} → ${currentAsistencias.length}');
       return true;
     }
     
-    // Verificar cambios en IDs o estados
-    for (int i = 0; i < currentAsistencias.length; i++) {
-      if (i >= _lastKnownAsistencias.length) return true;
+    // Crear un mapa por ID para comparación rápida e independiente del orden
+    final lastMap = {
+      for (var a in _lastKnownAsistencias) 
+        a.id: '${a.estado}|${a.horaSalida ?? ""}',
+    };
+
+    // Verificar si algún ID cambió su estado o hora de salida
+    for (var a in currentAsistencias) {
+      final currentKey = '${a.estado}|${a.horaSalida ?? ""}';
       
-      final current = currentAsistencias[i];
-      final last = _lastKnownAsistencias[i];
+      if (!lastMap.containsKey(a.id)) {
+        // Nueva asistencia
+        debugPrint('➕ Nueva asistencia detectada: ID ${a.id}');
+        return true;
+      }
       
-      if (current.id != last.id || 
-          current.estado != last.estado ||
-          current.horaSalida != last.horaSalida) {
+      if (lastMap[a.id] != currentKey) {
+        // Estado o hora de salida cambió
+        debugPrint('🔄 Cambio en asistencia ID ${a.id}: ${lastMap[a.id]} → $currentKey');
         return true;
       }
     }

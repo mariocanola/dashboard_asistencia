@@ -111,6 +111,41 @@ class ApiService {
     return aprendicesUnicos;
   }
 
+  /// Obtiene las fichas de caracterización con el total de aprendices por ficha
+  /// Endpoint: /api/fichas-caracterizacion/flutter/con-aprendices
+  /// Retorna array directo: [{id, ficha, jornada_id, total_aprendices}, ...]
+  Future<List<Map<String, dynamic>>> getFichasConAprendices() async {
+    try {
+      debugPrint(
+          '🔍 Consultando fichas con aprendices desde: /fichas-caracterizacion/flutter/con-aprendices');
+      final response = await _get(
+          '/fichas-caracterizacion/flutter/con-aprendices',
+          requireAuth: false);
+
+      // El backend devuelve un array directo [{...}, {...}], no un objeto con {success, data}
+      final dynamic data = _decodeResponse(response);
+
+      if (data is List) {
+        final List<dynamic> fichasData = data;
+        debugPrint('✅ Fichas con aprendices: ${fichasData.length} fichas');
+
+        // Debug: mostrar estructura de la primera ficha
+        if (fichasData.isNotEmpty) {
+          debugPrint('📋 Ejemplo de ficha: ${fichasData.first}');
+        }
+
+        return fichasData.cast<Map<String, dynamic>>();
+      } else {
+        debugPrint(
+            '❌ Respuesta inesperada (esperaba List): ${data.runtimeType}');
+        return [];
+      }
+    } catch (e) {
+      debugPrint('❌ Error al obtener fichas con aprendices: $e');
+      return [];
+    }
+  }
+
   /// Obtiene las fichas de caracterización
   /// Maneja errores 401/403 sin romper la UI
   Future<List<Map<String, dynamic>>> getFichas() async {

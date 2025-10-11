@@ -21,6 +21,7 @@ class UltraFastAsistenciasService {
   Timer? _webSocketHealthTimer;
   bool _isWebSocketConnected = false;
   bool _isFastPollingActive = false;
+  bool _isUpdating = false;
 
   // Cache optimizado
   final Map<int, AsistenciaDetalle> _asistenciasCache = {};
@@ -181,6 +182,14 @@ class UltraFastAsistenciasService {
 
   /// Actualización ultra-rápida optimizada (timeout aumentado a 5s para estabilidad)
   Future<void> _fastUpdate(AsistenciaProvider provider) async {
+    // Protección contra llamadas superpuestas
+    if (_isUpdating) {
+      debugPrint('⏸️ Actualización ultra-rápida ya en curso, omitiendo...');
+      return;
+    }
+    
+    _isUpdating = true;
+    
     try {
       final startTime = DateTime.now();
       debugPrint('⚡ Iniciando actualización ultra-rápida...');
@@ -216,6 +225,8 @@ class UltraFastAsistenciasService {
       debugPrint('❌ Error en actualización ultra-rápida: $e');
       // Intentar actualización de respaldo
       await _ultraFastBackupUpdate(provider);
+    } finally {
+      _isUpdating = false;
     }
   }
 
